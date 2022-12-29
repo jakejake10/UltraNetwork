@@ -1,135 +1,36 @@
 package utTypes;
-//
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.*;
+
+import pFns_baseObjects.Boundary;
+import pFns_general.PFns;
 import utCore.*;
 
-//import java.util.List;
-//import java.util.ArrayList;
-//import java.util.function.*;
-//
-//import pFns_general.*;
-//import pFns_baseObjects.Boundary;
-//
-public class ARTree  {
-//
-//	private List<Float> ar = new ArrayList<Float>();
-//	private List<String> splitDir = new ArrayList<String>();
-//
-//	public ARTree() {
-//		this(null, null);
-//	}
-//
-//	public ARTree(Float ar) {
-//		this(ar, null);
-//	}
-//
-//	public ARTree(Float ar, String splitDir) {
-//		super();
-//		this.ar.add(ar);
-//		this.splitDir.add(splitDir);
-//	}
-//
-//	///////////////////////////////////////////////////////////////////
-//
-//	public void addChild(AbstractNode par, float ar, String splitDir) {
-//		par.addChild();
-//		par.lastChild().setVal(ar, this.ar);
-//		par.lastChild().setVal(splitDir, this.splitDir);
-//	}
-//
-////	void addChild( Node node, float ar, String splitDir ) {
-////		node.addChild();
-////		ars.add(ar);
-////		splitDirs.add(splitDir);
-////	}
-//
-//	public void subdivideEqually( AbstractNode node, String splitDirIn, int count) {
-//		float[] arr = new float[count];
-//		for (int i = 0; i < count; i++)
-//			arr[i] = 1;
-//		subdivide(node, splitDirIn, arr);
-//	}
-//
-//	public void subdivide(AbstractNode node, String splitDirIn, float... percents) {
-//		node.setVal(splitDirIn, this.splitDir);
-//		subdivide(node, percents);
-//	}
-//
-//	public void subdivide(AbstractNode node, float... percents) {
-//		if (node.hasChildren()) return;
-//		if (percents.length == 1) percents = new float[] { percents[0], 1 - percents[0] };
-//		percents = PFns.makeSumTo1(percents);
-//		float[] newArs = new float[percents.length];
-//		for (int i = 0; i < percents.length; i++) {
-//			if (node.getVal(splitDir).equals("v"))
-//				newArs[i] = node.getVal(ar) * percents[i];
-//			else
-//				newArs[i] = 1 / (1 / node.getVal(ar) * percents[i]);
-//		}
-//		for (int i = 0; i < newArs.length; i++)
-//			addChild(node, newArs[i], null);
-////			children.add(new ARNode(newArs[i], this));
-//	}
-//
-//	///////////////////////////////////////////////////////
-//
-//	public void setARs(AbstractNode node) {
-//		if (!node.hasChildren()) return;
-//		else {
-//			float arSum = 0;
-//			for (AbstractNode child : node)
-//				arSum = node.getVal(splitDir) == "v" ? child.getVal(ar) : 1 / child.getVal(ar);
-//			node.setVal(node.getVal(splitDir) == "v" ? arSum : 1 / arSum, ar);
-//		}
-//	}
-//
-//	// GET FNS /////////////////////////////////////////////////////////
-//	////////////////////////////////////////////////////////////////////
-//	
-//	public float ar( AbstractNode node ) {
-//		return node.getVal(ar);
-//	}
-//	
-//	public String splitDir( AbstractNode node ) {
-//		return node.getVal(splitDir);
-//	}
-//	
-//	public static float ar(float w, float h) {
-//		return w / h;
-//	}
-//
-//	public static float hFromWAR(float wDim, float ar) {
-//		return wDim / ar;
-//	}
-//
-//	public static float wFromHAR(float hDim, float ar) {
-//		return hDim * ar;
-//	}
-//
-//	public static float areaFromWAR(float wDim, float ar) {
-//		return wDim * (wDim / ar);
-//	}
-//
-//	public static float areaFromHAR(float hDim, float ar) {
-//		return hDim * ar * hDim;
-//	}
-//
-//	public static float hFromAreaAR(float area, float ar) {
-//		return (float) Math.sqrt(area / ar);
-//	}
-//
-//	public static float wFromArea(float area, float ar) {
-//		return area / hFromAreaAR( area, ar );
-//	}
-//	
-////	public List<Boundary> getAsBoundaries( float x, float y, float w ){
-////		
-////		
-////		return makeListRecursive( n ->{
-////			if(!n.hasChildren() ) return new Boundary( x, y, w, hFromWAR( w, ar(n ) ) );
-////			
-////		}
-////	}
-//	
+public class ARTree extends AbstractTree<ARTree, ARNode> {
+
+	public ARTree(Float ar, String splitDir) {
+		super(); // calls setRoot
+		getRoot().ar = ar;
+		getRoot().splitDir = splitDir;
+	}
+
+	public void setRoot() {
+		new ARNode(this, "root"); // root node always at 0;
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	// INNER CLASSES ///////////////////////////////////////////////
+
+	
+	
 //	public Boundary makeBoundaryFromW( AbstractNode node, float x, float y, float w ) {
 //		return new Boundary( x, y, w, hFromWAR( w, ar(node) ) );
 //	}
@@ -163,5 +64,33 @@ public class ARTree  {
 //		}
 //		
 //	}
-//
+	
+	public List<Boundary> makeBoundariesXYW( float x, float y, float w ){
+		return generateBounds.apply(getRoot(), new Float[] { x,y,w,getRoot().hFromW(w) } );
+	}
+	
+	
+	public BiFunction<ARNode,Float[],List<Boundary>> generateBounds = ( n,xywh ) -> {
+		List<Boundary> out = new ArrayList<>();
+		if( !n.hasParent() || !n.hasChildren() ) out.add( new Boundary( xywh[0],xywh[1],xywh[2],xywh[2]  ) );
+		if( n.hasChildren() ) {
+			float changePos =   n.splitDir.equals("v") ? xywh[0] : xywh[1];
+			float constantDim = n.splitDir.equals("v") ? xywh[3] : xywh[2];
+			float constantPos = n.splitDir.equals("v") ? xywh[1] : xywh[0];
+			for( ARNode child : n.children() ) {
+				Float myDim = child.changeVal( constantDim, n.ar );
+				Float[] childDims;
+				if( n.splitDir.equals("v" ) )
+					childDims = new Float[] { changePos,constantPos,myDim,constantDim };
+				else 
+					childDims = new Float[] { constantPos,changePos,constantDim,myDim };
+				List<Boundary> bounds =  this.generateBounds.apply( child, childDims );
+				System.out.println( "bounds generated, size = " + bounds.size() );
+				out.addAll( bounds );
+				changePos += myDim;
+			}
+		}
+		return out;
+	};
+
 }

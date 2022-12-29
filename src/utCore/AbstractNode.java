@@ -1,8 +1,11 @@
 package utCore;
 
 import java.util.List;
-//import java.util.ArrayList;
+import java.util.Stack;
+import java.util.ArrayList;
 import java.util.function.*;
+
+
 import java.util.Iterator;
 
 public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends AbstractNode<T,N>> implements Iterable<N> {
@@ -30,8 +33,7 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 				throw new IllegalStateException("node list must be empty before adding root node");
 			myLoc = 0;
 			depth = 0;
-//			system.nodes.add(this);
-			addToTree();
+			system.nodes.add( getInstance() );
 			break;
 		}
 	}
@@ -39,7 +41,6 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 	// ABSTRACT FNS /////////////////////////////////////////////////////////////////
 	
 	public abstract N defaultConstructor( T system, String... mode );
-	public abstract void addToTree();
 	public abstract N getInstance();
 	
 //	public <E> Node( E val, List<E> vals , UltraTree system, String... mode ){	// for subclasses working with parallel data lists
@@ -112,6 +113,14 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 		return  myTree.nodes.get(firstChild + index);
 	}
 	
+	public <E> E get(List<E> inputList) {
+		try {
+			return inputList.get(myLoc);
+		} catch (Exception e) {
+			return null;
+		}
+	}
+	
 	public N getParent() {
 		return myTree.nodes.get(parentLoc);
 	}
@@ -123,19 +132,23 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 	public N lastChild() {
 		return get(size - 1);
 	}
-
-	public <E> E getVal(List<E> inputList) {
-		try {
-			return inputList.get(myLoc);
-		} catch (Exception e) {
-			return null;
-		}
+	
+	public List<N> getChildren(){
+		List<N> out = new ArrayList<N>();
+		for( int i = 0; i < size; i++ ) out.add( get( i ) ); // can't use iterable if used in iterable class?
+		return out;
 	}
 	
-	public <E> void setVal( E val, List<E> inputList ){
-		if( myLoc != inputList.size() ) inputList.set(myLoc, val);
-		else  inputList.add(val);
+	public List<N> getLeafs(){
+		return getLeafs( new ArrayList<N>() );
 	}
+	public List<N> getLeafs( List<N> data ){
+		if( !hasChildren() ) data.add( getInstance() );
+		for( N node : children() ) node.getLeafs( data );           // can't use iterable if used in iterable class?
+		return data;
+	}
+	
+	
 
 	public int childCount() {
 		return size;
@@ -144,9 +157,22 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 	public String toString() {
 		return "parentLoc = " + parentLoc + ", myLoc = " + myLoc + ", size = " + size + ", depth = " + depth;
 	}
+	
+	// SET FNS ////////////////////////////////////////////
+		
+	public <E> void setVal( E val, List<E> inputList ){
+		if( myLoc != inputList.size() ) inputList.set(myLoc, val);
+		else  inputList.add(val);
+	}
+	
+	// LAMDAS /////////////////////////////////////////////
 
 	public void applyFn(Consumer<N> fn ) {
 		fn.accept( getInstance() );
+	}
+	
+	public <E> E toObj( Function<N,E> fn ) {
+		return fn.apply( getInstance() );
 	}
 
 	public <E, R> E applyFn(BiFunction<N, R, E> fn) {
@@ -161,31 +187,68 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 	///////////////////////////////////////////////////////////
 
 	public Iterator<N> iterator() {
-		return new NodeChildIterator();
+		return new DFTTraversal<Void>();
 	}
 
-	public class NodeChildIterator implements Iterator<N> {
-		int index = 0;
+	public Iterable<N> leafs() {
+		return getLeafs();
+	}
+	
+	public Iterable<N> children() {
+		return new Iterable<N>() {
+			public Iterator<N> iterator() {
+				return new Iterator<N>() {
+					int index = 0;
 
-		// constructor
-		public NodeChildIterator() {
-		} // initialize cursor here if needed
+					public boolean hasNext() {
+						return index < size;
+					}
 
-		// Checks if the next element exists
+					public N next() {
+						N out = get(index);
+						index++;
+						return out;
+					}
+
+					public void remove() {
+					}
+				};
+			}
+		};
+	}
+	
+	
+	public class DFTTraversal<V> implements Iterator<N> {
+		public Stack<N> traversal = new Stack<>();
+		public BiConsumer<N, V> traverseFn;
+		public V data;
+
+		public DFTTraversal() {
+			traversal.push( getInstance() );
+		}
+
+		public DFTTraversal(V data, BiConsumer<N, V> traverseFn) {
+			traversal.push( getInstance() );
+			this.data = data;
+			this.traverseFn = traverseFn;
+		}
+
 		public boolean hasNext() {
-			return index < size;
+			return !traversal.isEmpty();
 		}
 
-		// moves the cursor/iterator to next element
 		public N next() {
-			N out = get(index);
-			index++;
-			return out;
+			N n = traversal.pop();
+			if (traverseFn != null) traverseFn.accept(n, data);
+			if (n.hasChildren()) {
+				for (int i = n.size - 1; i >= 0; i--)
+					traversal.push(n.get(i)); // reverse order
+			}
+			return n;
 		}
 
-		// Used to remove an element. Implement only if needed
 		public void remove() {
-			throw new UnsupportedOperationException();
+			// Default throws UnsupportedOperationException.
 		}
 	}
 
