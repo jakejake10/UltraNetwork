@@ -1,14 +1,16 @@
 package utTypes;
 
-import pFns_general.PFns;
 import utCore.*;
+import pFns_general.PFns;
+import java.util.List;
+
 
 public class ARNode extends AbstractNode<ARTree, ARNode> {
 	public String splitDir = "";
 	public float ar;
 
-	public ARNode(ARTree myTree, String... mode) {
-		super(myTree, mode);
+	public ARNode(List<ARNode> parList, String... mode) {
+		super( parList , mode );
 	}
 	
 	public void addChild( float ar ) {
@@ -25,8 +27,8 @@ public class ARNode extends AbstractNode<ARTree, ARNode> {
 
 	// ABSTRACT FNS //////////////////////////////////////////////////
 
-	public ARNode defaultConstructor(ARTree myTree, String... mode) {
-		return new ARNode(myTree);
+	public ARNode defaultConstructor(List<ARNode> parList, String... mode) {
+		return new ARNode( parList );
 	}
 
 	public ARNode getInstance() {
@@ -65,9 +67,9 @@ public class ARNode extends AbstractNode<ARTree, ARNode> {
 		return area / hFromArea( area );
 	}
 	
-	public float changeVal( float constantVal, float parAR ) {
-		if( splitDir.equals("v")) return constantVal * ( ar / parAR );	// cv = width
-		else                      return constantVal * ( ( 1 / ar ) / ( 1 / parAR ) ); // cv = height
+	public float changeVal( String splitDir, float constantVal ) {
+		if( splitDir.equals("v")) return wFromH( constantVal );
+		else                      return hFromW( constantVal );
 	}
 
 	// NEW FNS ///////////////////////////////////////////////////////
@@ -97,16 +99,20 @@ public class ARNode extends AbstractNode<ARTree, ARNode> {
 
 	///////////////////////////////////////////////////////
 
-	public float calcAR() {
+	public float calcARFromChildren() {
 		if ( hasChildren() ) {
 			float arSum = 0;
-			for (ARNode child : children())
-				arSum += splitDir == "v" ? child.calcAR() : 1 / child.calcAR();
+			for (ARNode child : children() )
+				arSum += splitDir == "v" ? child.calcARFromChildren() : 1 / child.calcARFromChildren();
 			ar = splitDir == "v" ? arSum : 1 / arSum;
 		}
 		return ar;
 	}
 	
+	
+	public String toString() {
+		return "ar = " + ar + ", splitDir = " + splitDir + super.toString();
+	}
 	
 	
 }

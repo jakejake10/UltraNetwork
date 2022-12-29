@@ -8,8 +8,9 @@ import java.util.function.*;
 
 import java.util.Iterator;
 
-public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends AbstractNode<T,N>> implements Iterable<N> {
-	public T myTree;
+public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends AbstractNode<T,N>> implements Iterable<N>{
+//	private T myTree;
+	List<N> myTree;
 	public int parentLoc = -1;
 	public int myLoc = -1;
 	public int firstChild = -1;
@@ -24,23 +25,23 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 //		this.system = system;
 //	}
 
-	public AbstractNode(T system, String... mode) {
-		this.myTree = system;
+	public AbstractNode(List<N> parList, String... mode) {
+		this.myTree = parList;
 		if( mode.length == 0 ) return;	// not needed?
 		switch (mode[0]) {
 		case "root":
-			if (system.nodes.size() > 0)
+			if (myTree.size() > 0)
 				throw new IllegalStateException("node list must be empty before adding root node");
 			myLoc = 0;
 			depth = 0;
-			system.nodes.add( getInstance() );
+			myTree.add( getInstance() );
 			break;
 		}
 	}
 	
 	// ABSTRACT FNS /////////////////////////////////////////////////////////////////
 	
-	public abstract N defaultConstructor( T system, String... mode );
+	public abstract N defaultConstructor( List<N> parList, String... mode );
 	public abstract N getInstance();
 	
 //	public <E> Node( E val, List<E> vals , UltraTree system, String... mode ){	// for subclasses working with parallel data lists
@@ -63,23 +64,23 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 	}
 
 	public void addChild( N child) {
-		int childIndex = !hasChildren() ? myTree.nodes.size() : firstChild + size; // myLoc + 1 + size;
+		int childIndex = !hasChildren() ? myTree.size() : firstChild + size; // myLoc + 1 + size;
 		if (!hasChildren())
 			firstChild = childIndex;
 		child.myLoc = childIndex;
 		child.parentLoc = myLoc;
 		child.depth = depth + 1;
 		updateNodes(childIndex, 1);
-		myTree.nodes.add(childIndex, child); // add to index after loc, and after any pre existing children
+		myTree.add(childIndex, child); // add to index after loc, and after any pre existing children
 		size++;
 	}
 	
 
 	public void updateNodes(int index, int amount) {
-		if (index == myTree.nodes.size())
+		if (index == myTree.size())
 			return;
-		for (int i = 0; i < myTree.nodes.size(); i++) {
-			N curNode = myTree.nodes.get(i);
+		for (int i = 0; i < myTree.size(); i++) {
+			N curNode = myTree.get(i);
 			if (curNode.myLoc >= index)
 				curNode.myLoc += amount;
 			if (curNode.firstChild >= index)
@@ -110,7 +111,7 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 
 	
 	public N get(int index) {
-		return  myTree.nodes.get(firstChild + index);
+		return  myTree.get(firstChild + index);
 	}
 	
 	public <E> E get(List<E> inputList) {
@@ -121,12 +122,17 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 		}
 	}
 	
-	public N getParent() {
-		return myTree.nodes.get(parentLoc);
+	public N parent() {
+		return myTree.get(parentLoc);
+	}
+	
+	public int parentIndex() {
+		if( !hasParent() ) return -1;
+		else return parent().firstChild - myLoc;
 	}
 	
 	public AbstractNode<T,N> getRoot() {
-		return hasParent() ? getParent() : this;
+		return hasParent() ? parent() : this;
 	}
 	
 	public N lastChild() {
@@ -148,7 +154,21 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 		return data;
 	}
 	
+	public int getLeafSize() {
+		return getLeafSize(0);
+	}
 	
+	public int getLeafSize( int input ) {
+		if(!hasChildren() ) return 1;
+		int out = 0;
+		for( AbstractNode<T,N> node : children() ) out+= node.getLeafSize();
+		return out;
+	}
+	
+	public int childIndex() {
+		if( !hasParent() ) return -1;
+		else return myLoc - parent().firstChild;
+	}
 
 	public int childCount() {
 		return size;
@@ -165,91 +185,111 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 		else  inputList.add(val);
 	}
 	
+	
+	
 	// LAMDAS /////////////////////////////////////////////
 
-	public void applyFn(Consumer<N> fn ) {
-		fn.accept( getInstance() );
-	}
+//	public void applyFn(Consumer<N> fn ) {
+//		fn.accept( getInstance() );
+//	}
+//	
+//	public <E> E toObj( Function<N,E> fn ) {
+//		return fn.apply( getInstance() );
+//	}
+//
+//	public <E, R> E applyFn(BiFunction<N, R, E> fn) {
+//		return fn.apply( getInstance(), null );
+//	}
+//
+//	public <E, R> E applyFn(R input, BiFunction<N, R, E> fn) {
+//		return fn.apply( getInstance(), input );
+//	}
 	
-	public <E> E toObj( Function<N,E> fn ) {
-		return fn.apply( getInstance() );
-	}
+	// ITERATORS ////////////////////////////////////////////////////////////////
+		/////////////////////////////////////////////////////////////////////////////
 
-	public <E, R> E applyFn(BiFunction<N, R, E> fn) {
-		return fn.apply( getInstance(), null );
-	}
+		
+		public Iterator<N> iterator() {
+			return new DFTTraversal<Void>();
+		}
+		
+		public Iterable<N> leafs() {
+			return getLeafs(  );
+		}
+		
 
-	public <E, R> E applyFn(R input, BiFunction<N, R, E> fn) {
-		return fn.apply( getInstance(), input );
-	}
+		
+		public Iterable<N> makeIterable( Iterator<N> type ) {
+		    return new Iterable<N>() {
+		        public Iterator<N> iterator() {
+		            return type;
+	            }
+	        };
+		}
+		
+		public Iterable<N> children() {
+			return new Iterable<N>() {
+				public Iterator<N> iterator() {
+					return new Iterator<N>() {
+						int index = 0;
 
-	// ITERATOR ///////////////////////////////////////////////
-	///////////////////////////////////////////////////////////
+						public boolean hasNext() {
+							return index < size;
+						}
 
-	public Iterator<N> iterator() {
-		return new DFTTraversal<Void>();
-	}
+						public N next() {
+							N out = get(index);
+							index++;
+							return out;
+						}
 
-	public Iterable<N> leafs() {
-		return getLeafs();
-	}
-	
-	public Iterable<N> children() {
-		return new Iterable<N>() {
-			public Iterator<N> iterator() {
-				return new Iterator<N>() {
-					int index = 0;
-
-					public boolean hasNext() {
-						return index < size;
-					}
-
-					public N next() {
-						N out = get(index);
-						index++;
-						return out;
-					}
-
-					public void remove() {
-					}
-				};
+						public void remove() {
+						}
+					};
+				}
+			};
+		}
+		
+		
+		public class DFTTraversal<V> implements Iterator<N> {
+			public Stack<N> traversal = new Stack<>();
+			public BiConsumer<N, V> traverseFn;
+			public V data;
+			
+			
+			public DFTTraversal() {
+				traversal.push( getInstance() );
 			}
-		};
-	}
-	
-	
-	public class DFTTraversal<V> implements Iterator<N> {
-		public Stack<N> traversal = new Stack<>();
-		public BiConsumer<N, V> traverseFn;
-		public V data;
 
-		public DFTTraversal() {
-			traversal.push( getInstance() );
-		}
-
-		public DFTTraversal(V data, BiConsumer<N, V> traverseFn) {
-			traversal.push( getInstance() );
-			this.data = data;
-			this.traverseFn = traverseFn;
-		}
-
-		public boolean hasNext() {
-			return !traversal.isEmpty();
-		}
-
-		public N next() {
-			N n = traversal.pop();
-			if (traverseFn != null) traverseFn.accept(n, data);
-			if (n.hasChildren()) {
-				for (int i = n.size - 1; i >= 0; i--)
-					traversal.push(n.get(i)); // reverse order
+			public DFTTraversal(V data, BiConsumer<N, V> traverseFn) {
+				traversal.push( getInstance() );
+				this.data = data;
+				this.traverseFn = traverseFn;
 			}
-			return n;
-		}
 
-		public void remove() {
-			// Default throws UnsupportedOperationException.
+			public boolean hasNext() {
+				return !traversal.isEmpty();
+			}
+
+			public N next() {
+				N n = traversal.pop();
+				if (traverseFn != null) traverseFn.accept(n, data);
+				if (n.hasChildren()) {
+					for (int i = n.size - 1; i >= 0; i--)
+						traversal.push(n.get(i)); // reverse order
+				}
+				return n;
+			}
+
+			public void remove() {
+				// Default throws UnsupportedOperationException.
+			}
 		}
-	}
+	
+	
+	
+	
+
+	
 
 }

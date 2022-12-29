@@ -7,6 +7,9 @@ import java.util.Iterator;
 import java.util.Stack;
 import java.util.stream.*;
 
+import utCore.AbstractNode.DFTTraversal;
+
+
 //import processing.core.*;
 
 public abstract class AbstractTree<T extends AbstractTree<T,N>,N extends AbstractNode<T,N>> implements Iterable<N> {
@@ -21,11 +24,12 @@ public abstract class AbstractTree<T extends AbstractTree<T,N>,N extends Abstrac
 	// ABSTRACT FNS ///////////////////////////////////////////////////
 	
 	public abstract void setRoot();
+	
 
 	// GET FNS ////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////
 
-	public N getRoot() {
+	public N root() {
 		return nodes.get(0);
 	}
 
@@ -34,7 +38,7 @@ public abstract class AbstractTree<T extends AbstractTree<T,N>,N extends Abstrac
 	}
 
 	public int leafSize() {
-		return leafSize(getRoot());
+		return leafSize(root());
 	}
 
 	public int leafSize(N node) {
@@ -46,7 +50,7 @@ public abstract class AbstractTree<T extends AbstractTree<T,N>,N extends Abstrac
 	}
 
 	public List<N> getLeafs() {
-		return getLeafs(getRoot());
+		return getLeafs(root());
 	}
 
 	public List<N> getLeafs(N node) {
@@ -56,48 +60,54 @@ public abstract class AbstractTree<T extends AbstractTree<T,N>,N extends Abstrac
 	}
 	
 	
+
+
+	
+	// LIST FUNCTIONS /////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////
+	
+	
+//	public <E> List<E> makeList( Function<N, E> fn ) {	// for recursive lambdas, just make new lambda
+//		List<E> out = new ArrayList<E>();
+//		for (N n : this)
+//			out.add(fn.apply(n));
+//		return out;
+//	}
+	
+	
 	public <E> List<E> makeList( Function<N, E> fn ) {	// for recursive lambdas, just make new lambda
 		List<E> out = new ArrayList<E>();
-		for (N n : this)
-			out.add(fn.apply(n));
-		return out;
-	}
-	
-	public <E> List<E> makeListRecursive( Function<N, E> fn, N... node ){
-		return makeListRecursive( new ArrayList<E>(), fn, node );
-	}
-	public <E> List<E> makeListRecursive( List<E> data, Function<N, E> fn, N... node ) {	// for recursive lambdas, just 
-		N targetNode = node.length > 0 ? node[0] : getRoot();
-		data.add( fn.apply( targetNode ) );
-		if( targetNode.hasChildren() ) for( N child : node ) data.addAll( makeListRecursive( data, fn, child ) );
-		return data;
-	}
-
-	public <E, R> List<R> mapList(List<E> inputList, BiFunction<N, E, R> mapFn) {
-		List<R> out = new ArrayList<R>();
-		for (int i = 0; i < inputList.size(); i++)
-			out.add(null);
-
-		for ( N n : this ) {
-			int index = n.myLoc;
-			out.set(index, mapFn.apply(n, inputList.get(index)));
+		for ( N node : this ) {
+			E val = fn.apply( node );
+			if( val != null )out.add( val );
 		}
 		return out;
 	}
+	
+	public <E> List<E> makeOrderedList( E rootData, BiConsumer<N,List<E>> fn ) {	// for recursive lambdas, just make new lambda
+		List<E> out = new ArrayList<E>();
+		out.add(rootData);
+		while( out.size() < size() ) out.add(null);
+		for ( N node : this ) fn.accept( node, out ); // dft
+ 		return out;
+	}
+	
+
 
 	
 
-	// ITERATORS ////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////////////
-
+	// ITERATOR //////////////////////////////////////////////
+	
 	public Iterator<N> iterator() {
-		return getRoot().iterator();
+		return root().iterator();
 	}
 	
-	public Iterable<N> leafs() {
-		return getRoot().leafs();
+	public Iterable<N> leafs(){
+		return leafs( root() );
 	}
-	
+	public Iterable<N> leafs( N baseNode ){
+		return baseNode.leafs();
+	}
 	
 	
 
@@ -220,5 +230,9 @@ public abstract class AbstractTree<T extends AbstractTree<T,N>,N extends Abstrac
 		System.out.println( indentStringLines( createPrintFn( n -> "node"
 				+ (n.get(inputList) != null && n.get(inputList).toString() != null ? " - " + n.get(inputList) : ""))));
 	}
+	
+	
+	
+
 
 }
