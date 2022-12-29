@@ -7,19 +7,19 @@ import pFns_baseObjects.Boundary;
 
 
 
-public class TreeFns {
-	public BiConsumer<Node,?> makeBiConsumer( Consumer<Node> input ){
-	    BiConsumer<Node,?> out = (c,d) -> input.accept(c);
+public class TreeFns<T extends AbstractTree<T,N>,N extends AbstractNode<T,N>> {
+	public BiConsumer<N,?> makeBiConsumer( Consumer<N> input ){
+	    BiConsumer<N,?> out = (c,d) -> input.accept(c);
 	    return out;
 	  }
 	  
 	  // NODE/DATA FNS /////////////////////////////////////////////////////
 	  //////////////////////////////////////////////////////////////////////
 	  
-	public BiFunction<Node,Void,Integer> getLeafCount = (n,v) -> {
+	public BiFunction<N,Void,Integer> getLeafCount = (n,v) -> {
 	    if( !n.hasChildren() ) return 1;
 	      int leafs = 0;
-	      for( Node nChild : n ) leafs += this.getLeafCount.apply( nChild, null );
+	      for( N nChild : n ) leafs += this.getLeafCount.apply( nChild, null );
 	      return leafs;
 	  };
 	  
@@ -36,18 +36,18 @@ public class TreeFns {
 	  
 	  // NODE ARRAY ////////////////////////////////////////////////////////////////
 	  
-	  public BiConsumer<Node,List<Node>> getLeafs = (n,d) -> {
+	  public BiConsumer<N,List<N>> getLeafs = (n,d) -> {
 	    if( !n.hasChildren() ){
 	      d.add( n );
 	      return;
 	    }
-	    for( Node nChild : n ) this.getLeafs.accept( nChild, d );
+	    for( N nChild : n ) this.getLeafs.accept( nChild, d );
 	  };
 	  
 	  
 	  // Integer Array /////////////////////////////////////////////////////////////
 	  
-	  public BiConsumer<Node,Integer[]> makeLeafs = (n,d) ->{        // [count,maxChildren]
+	  public BiConsumer<N,Integer[]> makeLeafs = (n,d) ->{        // [count,maxChildren]
 	    int count = d[0];
 	    int maxChildren = d[1];
 	    if( count == 1 ) return;

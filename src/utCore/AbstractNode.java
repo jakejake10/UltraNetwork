@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.function.*;
 import java.util.Iterator;
 
-public class Node implements Iterable<Node> {
-	UltraTree system;
+public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends AbstractNode<T,N>> implements Iterable<N> {
+	T myTree;
 	public int parentLoc = -1;
 	public int myLoc = -1;
 	public int firstChild = -1;
@@ -17,22 +17,30 @@ public class Node implements Iterable<Node> {
 	
 	// CONSTRUCTORS ////////////////////////////////////////////////////////
 
-	public Node(UltraTree system) {
-		this.system = system;
-	}
+//	public AbstractNode(AbstractTree system) {
+//		this.system = system;
+//	}
 
-	public Node(UltraTree system, String mode) {
-		this(system);
-		switch (mode) {
+	public AbstractNode(T system, String... mode) {
+		this.myTree = system;
+		if( mode.length == 0 ) return;	// not needed?
+		switch (mode[0]) {
 		case "root":
 			if (system.nodes.size() > 0)
 				throw new IllegalStateException("node list must be empty before adding root node");
 			myLoc = 0;
 			depth = 0;
-			system.nodes.add(this);
+//			system.nodes.add(this);
+			addToTree();
 			break;
 		}
 	}
+	
+	// ABSTRACT FNS /////////////////////////////////////////////////////////////////
+	
+	abstract N defaultConstructor( T system, String... mode );
+	abstract void addToTree();
+	abstract N getInstance();
 	
 //	public <E> Node( E val, List<E> vals , UltraTree system, String... mode ){	// for subclasses working with parallel data lists
 //		this( system, mode.length > 0 ? mode[0] : "");
@@ -44,7 +52,7 @@ public class Node implements Iterable<Node> {
 	
 	// add at index, new int parameter
 	public void addChild() {
-		addChild(new Node(system));
+		addChild( defaultConstructor( myTree ) );
 	}
 
 	public <E> void addChild(E input, List<E> inputList) {
@@ -53,24 +61,24 @@ public class Node implements Iterable<Node> {
 		inputList.add(myLoc, input);
 	}
 
-	public void addChild(Node child) {
-		int childIndex = !hasChildren() ? system.nodes.size() : firstChild + size; // myLoc + 1 + size;
+	public void addChild( N child) {
+		int childIndex = !hasChildren() ? myTree.nodes.size() : firstChild + size; // myLoc + 1 + size;
 		if (!hasChildren())
 			firstChild = childIndex;
 		child.myLoc = childIndex;
 		child.parentLoc = myLoc;
 		child.depth = depth + 1;
 		updateNodes(childIndex, 1);
-		system.nodes.add(childIndex, child); // add to index after loc, and after any pre existing children
+		myTree.nodes.add(childIndex, child); // add to index after loc, and after any pre existing children
 		size++;
 	}
 	
 
 	public void updateNodes(int index, int amount) {
-		if (index == system.nodes.size())
+		if (index == myTree.nodes.size())
 			return;
-		for (int i = 0; i < system.nodes.size(); i++) {
-			Node curNode = system.nodes.get(i);
+		for (int i = 0; i < myTree.nodes.size(); i++) {
+			N curNode = myTree.nodes.get(i);
 			if (curNode.myLoc >= index)
 				curNode.myLoc += amount;
 			if (curNode.firstChild >= index)
@@ -100,19 +108,19 @@ public class Node implements Iterable<Node> {
 	// GET FNS ////////////////////////////////////////////////////////////////
 
 	
-	public Node get(int index) {
-		return system.nodes.get(firstChild + index);
+	public N get(int index) {
+		return myTree.nodes.get(firstChild + index);
 	}
 	
-	public Node getParent() {
-		return system.nodes.get(parentLoc);
+	public N getParent() {
+		return myTree.nodes.get(parentLoc);
 	}
 	
-	public Node getRoot() {
+	public AbstractNode<T,N> getRoot() {
 		return hasParent() ? getParent() : this;
 	}
 	
-	public Node lastChild() {
+	public N lastChild() {
 		return get(size - 1);
 	}
 
@@ -137,26 +145,26 @@ public class Node implements Iterable<Node> {
 		return "parentLoc = " + parentLoc + ", myLoc = " + myLoc + ", size = " + size + ", depth = " + depth;
 	}
 
-	public void applyFn(Consumer<Node> fn) {
-		fn.accept(this);
+	public void applyFn(Consumer<N> fn ) {
+		fn.accept( getInstance() );
 	}
 
-	public <E, R> E applyFn(BiFunction<Node, R, E> fn) {
-		return fn.apply(this, null);
+	public <E, R> E applyFn(BiFunction<N, R, E> fn) {
+		return fn.apply( getInstance(), null );
 	}
 
-	public <E, R> E applyFn(R input, BiFunction<Node, R, E> fn) {
-		return fn.apply(this, input);
+	public <E, R> E applyFn(R input, BiFunction<N, R, E> fn) {
+		return fn.apply( getInstance(), input );
 	}
 
 	// ITERATOR ///////////////////////////////////////////////
 	///////////////////////////////////////////////////////////
 
-	public Iterator<Node> iterator() {
+	public Iterator<N> iterator() {
 		return new NodeChildIterator();
 	}
 
-	public class NodeChildIterator implements Iterator<Node> {
+	public class NodeChildIterator implements Iterator<N> {
 		int index = 0;
 
 		// constructor
@@ -169,8 +177,8 @@ public class Node implements Iterable<Node> {
 		}
 
 		// moves the cursor/iterator to next element
-		public Node next() {
-			Node out = get(index);
+		public N next() {
+			N out = get(index);
 			index++;
 			return out;
 		}

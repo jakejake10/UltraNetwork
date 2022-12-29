@@ -9,21 +9,23 @@ import java.util.stream.*;
 
 //import processing.core.*;
 
-public class UltraTree implements Iterable<Node> {
-	public List<Node> nodes = new ArrayList<>();
-	public TreeFns fns = new TreeFns();
+public abstract class AbstractTree<T extends AbstractTree<T,N>,N extends AbstractNode<T,N>> implements Iterable<N> {
+	public List<N> nodes = new ArrayList<>();
+	public TreeFns<T,N> fns = new TreeFns<>();
+		
 	
-	
-	
-	
-	public UltraTree() {
-		new Node(this, "root"); // root node always at 0;
+	public AbstractTree() {
+		setRoot(); // root node always at 0;
 	}
+	
+	// ABSTRACT FNS ///////////////////////////////////////////////////
+	
+	abstract void setRoot();
 
 	// GET FNS ////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////
 
-	public Node root() {
+	public N root() {
 		return nodes.get(0);
 	}
 
@@ -35,67 +37,67 @@ public class UltraTree implements Iterable<Node> {
 		return leafSize(root());
 	}
 
-	public int leafSize(Node node) {
+	public int leafSize(N node) {
 		return fns.getLeafCount.apply(node, null);
 	}
 
-	public Node get(int index) {
+	public N get(int index) {
 		return nodes.get(index);
 	}
 
-	public List<Node> getLeafs() {
+	public List<N> getLeafs() {
 		return getLeafs(root());
 	}
 
-	public List<Node> getLeafs(Node node) {
-		List<Node> out = new ArrayList<Node>();
+	public List<N> getLeafs(N node) {
+		List<N> out = new ArrayList<N>();
 		fns.getLeafs.accept(node, out);
 		return out;
 	}
 	
 	
-	public <E> List<E> makeList( Function<Node, E> fn ) {	// for recursive lambdas, just make new lambda
+	public <E> List<E> makeList( Function<N, E> fn ) {	// for recursive lambdas, just make new lambda
 		List<E> out = new ArrayList<E>();
-		for (Node n : this)
+		for (N n : this)
 			out.add(fn.apply(n));
 		return out;
 	}
 	
-	public <E> List<E> makeListRecursive( Function<Node, E> fn, Node... node ){
-		return makeListRecursive( new ArrayList<E>(), fn, node );
-	}
-	public <E> List<E> makeListRecursive( List<E> data, Function<Node, E> fn, Node... node ) {	// for recursive lambdas, just 
-		Node targetNode = node.length > 0 ? node[0] : root();
-		data.add( fn.apply( targetNode ) );
-		if( targetNode.hasChildren() ) for( Node child : node ) data.addAll( makeListRecursive( data, fn, child ) );
-		return data;
-	}
-
-	public <E, R> List<R> mapList(List<E> inputList, BiFunction<Node, E, R> mapFn) {
-		List<R> out = new ArrayList<R>();
-		for (int i = 0; i < inputList.size(); i++)
-			out.add(null);
-
-		for (Node n : this) {
-			int index = n.myLoc;
-			out.set(index, mapFn.apply(n, inputList.get(index)));
-		}
-		return out;
-	}
+//	public <E> List<E> makeListRecursive( Function<N, E> fn, N... node ){
+//		return makeListRecursive( new ArrayList<E>(), fn, node );
+//	}
+//	public <E> List<E> makeListRecursive( List<E> data, Function<N, E> fn, N... node ) {	// for recursive lambdas, just 
+//		N targetNode = node.length > 0 ? node[0] : root();
+//		data.add( fn.apply( targetNode ) );
+//		if( targetNode.hasChildren() ) for( N child : node ) data.addAll( makeListRecursive( data, fn, child ) );
+//		return data;
+//	}
+//
+//	public <E, R> List<R> mapList(List<E> inputList, BiFunction<N, E, R> mapFn) {
+//		List<R> out = new ArrayList<R>();
+//		for (int i = 0; i < inputList.size(); i++)
+//			out.add(null);
+//
+//		for ( N n : this ) {
+//			int index = n.myLoc;
+//			out.set(index, mapFn.apply(n, inputList.get(index)));
+//		}
+//		return out;
+//	}
 
 	
 
 	// ITERATORS ////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////
 
-	public Iterator<Node> iterator() {
+	public Iterator<N> iterator() {
 		return new TreeDFTIterator<Void>();
 	}
 	
 	
-	public <E> Iterable<Node> iterableMaker(String mode, E data, BiConsumer<Node,E> fn ) {
-		return new Iterable<Node>() {
-			public Iterator<Node> iterator() {
+	public <E> Iterable<N> iterableMaker(String mode, E data, BiConsumer<N,E> fn ) {
+		return new Iterable<N>() {
+			public Iterator<N> iterator() {
 				switch( mode ) {
 				case "dft":
 					if( fn == null ) return new TreeDFTIterator<Void>();
@@ -110,7 +112,7 @@ public class UltraTree implements Iterable<Node> {
 	}
 
 	
-	public Iterable<Node> dft() {
+	public Iterable<N> dft() {
 		return iterableMaker("dft",null,null );
 //		return new Iterable<Node>() {
 //			public Iterator<Node> iterator() {
@@ -119,7 +121,7 @@ public class UltraTree implements Iterable<Node> {
 //		};
 	}
 
-	public <E> Iterable<Node> dft(E data, BiConsumer<Node,E> fn) {
+	public <E> Iterable<N> dft(E data, BiConsumer<N,E> fn) {
 		return iterableMaker("dft", data, fn );
 //		return new Iterable<Node>() {
 //			public Iterator<Node> iterator() {
@@ -128,21 +130,21 @@ public class UltraTree implements Iterable<Node> {
 //		};
 	}
 	
-	public Iterable<Node> leafs() {
+	public Iterable<N> leafs() {
 		return iterableMaker( "leafs", null, null );
 	}
 
-	public class TreeDFTIterator<T> implements Iterator<Node> {
-		public Stack<Node> traversal = new Stack<>();
-		public BiConsumer<Node, T> traverseFn;
-		public T data;
+	public class TreeDFTIterator<V> implements Iterator<N> {
+		public Stack<N> traversal = new Stack<>();
+		public BiConsumer<N, V> traverseFn;
+		public V data;
 
 		// constructor
 		public TreeDFTIterator() {
 			traversal.push(nodes.get(0));
 		}
 
-		public TreeDFTIterator(T data, BiConsumer<Node, T> traverseFn) {
+		public TreeDFTIterator(V data, BiConsumer<N, V> traverseFn) {
 			traversal.push(nodes.get(0));
 			this.data = data;
 			this.traverseFn = traverseFn;
@@ -152,8 +154,8 @@ public class UltraTree implements Iterable<Node> {
 			return !traversal.isEmpty();
 		}
 
-		public Node next() {
-			Node n = traversal.pop();
+		public N next() {
+			N n = traversal.pop();
 			if (traverseFn != null)
 				traverseFn.accept(n, data);
 			if (n.hasChildren()) {
@@ -170,7 +172,7 @@ public class UltraTree implements Iterable<Node> {
 	}
 	
 	
-	public class LeafIterator implements Iterator<Node> {
+	public class LeafIterator implements Iterator<N> {
 		public List<Integer> leafs;
 		int pos = 0;
 
@@ -183,8 +185,8 @@ public class UltraTree implements Iterable<Node> {
 			return pos < leafs.size();
 		}
 
-		public Node next() {
-			Node n = nodes.get( leafs.get(pos) );
+		public N next() {
+			N n = nodes.get( leafs.get(pos) );
 			pos++;
 			return n;
 		}
@@ -203,28 +205,28 @@ public class UltraTree implements Iterable<Node> {
 	}
 
 
-	public <E>  TreeBuilder<E> build(E data, BiConsumer<Node, E> buildFn) {
+	public <E>  TreeBuilder<E> build(E data, BiConsumer<N, E> buildFn) {
 		return new TreeBuilder<E>(data, buildFn);
 	}
 
 	
-	public class TreeBuilder<T> {
-		public Node targetNode;
-		public BiConsumer<Node, T> buildFn;
-		public T data;
-		public Iterable<Node> traversalOrder = dft();
-		public boolean isTraversalFn = false;
+	public class TreeBuilder<V> {
+		public N targetNode;
+		public BiConsumer<N, V> buildFn;
+		public V data;
+		public Iterable<N> traversalOrder = dft();
 		
-		Function<Node,String> splitType;
-		Function<Node,Integer> depth;
-		Function<Node,Integer> childCount;
+//		Function<Node,String> splitType; // need subclass?
+		Function<N,Integer> depthFn;
+		Function<N,Integer> childCountFn;
+		BiConsumer<N,N> addChildFn = (n,c) -> n.addChild(c);
 		
 
 		public TreeBuilder() {
 			this.targetNode = root();
 		}
 
-		public TreeBuilder(T data, BiConsumer<Node, T> buildFn) {
+		public TreeBuilder(V data, BiConsumer<N, V> buildFn) {
 			this.data = data;
 			this.buildFn = buildFn;
 			this.targetNode = root();
@@ -233,47 +235,56 @@ public class UltraTree implements Iterable<Node> {
 		// SETTER FNS
 		// ///////////////////////////////////////////////////////////////////
 
-		public TreeBuilder<T> setFn(BiConsumer<Node, T> buildFnIn) {
+		public TreeBuilder<V> setFn(BiConsumer<N, V> buildFnIn) {
 			this.buildFn = buildFnIn;
 			return this;
 		}
 
-		public TreeBuilder<T> setData(T data) {
+		public TreeBuilder<V> setData(V data) {
 			this.data = data;
 			return this;
 		}
 
-		public TreeBuilder<T> setNode(Node targetNode) {
+		public TreeBuilder<V> setNode(N targetNode) {
 			this.targetNode = targetNode;
 			return this;
 		}
 
-		public TreeBuilder<T> makeTraversalFn() {	// traversal iterator runs buildfn before add children to queue
-			if (buildFn == null)
-				throw new IllegalStateException("build fn must be assigned before setting as traversal");
-			this.isTraversalFn = true;
-			traversalOrder = dft(data, buildFn);
-			return this;
-		}
+//		public TreeBuilder<T> makeTraversalFn() {	// traversal iterator runs buildfn before add children to queue
+//			if (buildFn == null)
+//				throw new IllegalStateException("build fn must be assigned before setting as traversal");
+//			this.isTraversalFn = true;
+//			traversalOrder = dft(data, buildFn);
+//			return this;
+//		}
 
 		// TERMINAL FNs ///////////////////////////////////////////////////////////
 
 		public void generate() {	// if already has children, move to children without running fn?
-			if (isTraversalFn)
-				runTraverse();
-			else
-				buildFn.accept(targetNode, data);
+			buildFn.accept(targetNode, data);
+		}
+		public void generateForEach() {
+			traversalOrder = dft(data, buildFn);
+			for (N n : traversalOrder) continue;
 		}
 
-		public void runTraverse() { // builds as it traverses
-			for (Node n : traversalOrder)
-				continue;
-		}
-
+		
 		// TYPE SPECIFIC FNS ///////////////////////////////////////////////////////
 
 		public TreeBuilder<Integer[]> leafChildCount(int leafs, int maxChildren) {
 			return new TreeBuilder<Integer[]>(new Integer[] { leafs, maxChildren }, fns.makeLeafs).setNode(targetNode);
+		}
+		
+		BiConsumer<N,V> recursiveBuild = ( n, t ) -> {
+			if( n.depth < depthFn.apply(n) ) {
+				for( int i = 0; i < childCountFn.apply(n); i++ )
+					n.addChild();
+			}
+				
+		};
+		
+		public interface FunctionalBuilder{
+			
 		}
 	}
 
@@ -281,18 +292,18 @@ public class UltraTree implements Iterable<Node> {
 	// //////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////////////////
 
-	public String indentStringLines(Function<Node, ?> fn) {
+	public String indentStringLines(Function<N, ?> fn) {
 		String out = "";
-		for (Node n : dft())
+		for (N n : dft())
 			out += createPrintFn(fn).apply(n).toString() + "\n";
 		return out;
 	}
 	
-	public void printOperation(Function<Node, ?> fn) {
-		for (Node n : dft()) System.out.println( createPrintFn(fn).apply(n).toString() );
+	public void printOperation(Function<N, ?> fn) {
+		for (N n : dft()) System.out.println( createPrintFn(fn).apply(n).toString() );
 	}
 
-	public Function<Node, String> createPrintFn(Function<Node, ?> addedString) {
+	public Function<N, String> createPrintFn(Function<N, ?> addedString) {
 		return n -> new String(new char[n.depth]).replace('\0', ' ') + addedString.apply(n).toString();
 	}
 

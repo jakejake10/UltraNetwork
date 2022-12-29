@@ -104,7 +104,7 @@ ${line}
 		<echo message="building library ..." />
 		<antcall target="generate.structure"><param name="folder" value="library"/></antcall>
 		<antcall target="generate.source" />
-		<antcall target="compile" />
+		<!--<antcall target="compile" /> // suppressed, not working -->
 	  	<antcall target="generate.jar"><param name="folder" value="library"/></antcall>
 	  	<antcall target="generate.javadoc" />
 		<antcall target="generate.libprops" />
