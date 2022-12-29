@@ -104,7 +104,7 @@ ${line}
 		<echo message="building library ..." />
 		<antcall target="generate.structure"><param name="folder" value="library"/></antcall>
 		<antcall target="generate.source" />
-		<!--<antcall target="compile" /> // suppressed, not working -->
+		<antcall target="compile" /> 
 	  	<antcall target="generate.jar"><param name="folder" value="library"/></antcall>
 	  	<antcall target="generate.javadoc" />
 		<antcall target="generate.libprops" />
@@ -171,8 +171,11 @@ ${line}
   		<copy todir="${project.tmp}/${project.name}/src">
   			<fileset dir="${project.src}"/>
 	  	</copy>
-	  	<copy todir="${project.tmp}/${project.name}/${folder}">
-  			<fileset dir="${project.lib}" excludes="*.*" />
+	  	<copy todir="${project.tmp}/${project.name}/${folder}"> 
+	  		<!-- <fileset dir="${project.lib}" excludes="*.*" /> -->
+	  		<fileset dir="${project.lib}" excludes="README/** core.jar/** 
+	  			  			pFunctions.jar/** PGS.jar/** geomerative.jar/**
+	  			  			svg.jar/**" /> <!-- modified to exclude core! -->
 	  	</copy>
 	</target>
 	

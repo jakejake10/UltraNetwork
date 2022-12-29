@@ -6,7 +6,7 @@ import java.util.function.*;
 import java.util.Iterator;
 
 public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends AbstractNode<T,N>> implements Iterable<N> {
-	T myTree;
+	public T myTree;
 	public int parentLoc = -1;
 	public int myLoc = -1;
 	public int firstChild = -1;
@@ -38,9 +38,9 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 	
 	// ABSTRACT FNS /////////////////////////////////////////////////////////////////
 	
-	abstract N defaultConstructor( T system, String... mode );
-	abstract void addToTree();
-	abstract N getInstance();
+	public abstract N defaultConstructor( T system, String... mode );
+	public abstract void addToTree();
+	public abstract N getInstance();
 	
 //	public <E> Node( E val, List<E> vals , UltraTree system, String... mode ){	// for subclasses working with parallel data lists
 //		this( system, mode.length > 0 ? mode[0] : "");
@@ -109,7 +109,7 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 
 	
 	public N get(int index) {
-		return myTree.nodes.get(firstChild + index);
+		return  myTree.nodes.get(firstChild + index);
 	}
 	
 	public N getParent() {

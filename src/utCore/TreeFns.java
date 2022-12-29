@@ -19,7 +19,7 @@ public class TreeFns<T extends AbstractTree<T,N>,N extends AbstractNode<T,N>> {
 	public BiFunction<N,Void,Integer> getLeafCount = (n,v) -> {
 	    if( !n.hasChildren() ) return 1;
 	      int leafs = 0;
-	      for( N nChild : n ) leafs += this.getLeafCount.apply( nChild, null );
+//	      for( N nChild : n ) leafs += this.getLeafCount.apply( nChild, null );
 	      return leafs;
 	  };
 	  
@@ -41,7 +41,7 @@ public class TreeFns<T extends AbstractTree<T,N>,N extends AbstractNode<T,N>> {
 	      d.add( n );
 	      return;
 	    }
-	    for( N nChild : n ) this.getLeafs.accept( nChild, d );
+//	    for( N nChild : n ) this.getLeafs.accept( nChild, d );
 	  };
 	  
 	  
@@ -55,7 +55,7 @@ public class TreeFns<T extends AbstractTree<T,N>,N extends AbstractNode<T,N>> {
 	    for( int ct : childGroups ){
 	      if( ct > 0 ) {
 	        n.addChild();
-	        this.makeLeafs.accept( n.lastChild(), new Integer[]{ ct, maxChildren } );
+//	        this.makeLeafs.accept( n.lastChild(), new Integer[]{ ct, maxChildren } );
 	      }
 	    }
 	  };

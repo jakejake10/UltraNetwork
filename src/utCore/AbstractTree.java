@@ -20,7 +20,7 @@ public abstract class AbstractTree<T extends AbstractTree<T,N>,N extends Abstrac
 	
 	// ABSTRACT FNS ///////////////////////////////////////////////////
 	
-	abstract void setRoot();
+	public abstract void setRoot();
 
 	// GET FNS ////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////
@@ -114,20 +114,12 @@ public abstract class AbstractTree<T extends AbstractTree<T,N>,N extends Abstrac
 	
 	public Iterable<N> dft() {
 		return iterableMaker("dft",null,null );
-//		return new Iterable<Node>() {
-//			public Iterator<Node> iterator() {
-//				return new TreeDFTIterator<Void>();
-//			}
-//		};
+
 	}
 
 	public <E> Iterable<N> dft(E data, BiConsumer<N,E> fn) {
 		return iterableMaker("dft", data, fn );
-//		return new Iterable<Node>() {
-//			public Iterator<Node> iterator() {
-//				return new TreeDFTIterator<E>(data, fn);
-//			}
-//		};
+
 	}
 	
 	public Iterable<N> leafs() {
@@ -200,93 +192,93 @@ public abstract class AbstractTree<T extends AbstractTree<T,N>,N extends Abstrac
 	// TREE BUILDER
 	// //////////////////////////////////////////////////////////////////////////
 
-	public TreeBuilder<Void> build() {
-		return new TreeBuilder<Void>();
-	}
-
-
-	public <E>  TreeBuilder<E> build(E data, BiConsumer<N, E> buildFn) {
-		return new TreeBuilder<E>(data, buildFn);
-	}
+//	public TreeBuilder<Void> build() {
+//		return new TreeBuilder<Void>();
+//	}
+//
+//
+//	public <E>  TreeBuilder<E> build(E data, BiConsumer<N, E> buildFn) {
+//		return new TreeBuilder<E>(data, buildFn);
+//	}
 
 	
-	public class TreeBuilder<V> {
-		public N targetNode;
-		public BiConsumer<N, V> buildFn;
-		public V data;
-		public Iterable<N> traversalOrder = dft();
-		
-//		Function<Node,String> splitType; // need subclass?
-		Function<N,Integer> depthFn;
-		Function<N,Integer> childCountFn;
-		BiConsumer<N,N> addChildFn = (n,c) -> n.addChild(c);
-		
-
-		public TreeBuilder() {
-			this.targetNode = root();
-		}
-
-		public TreeBuilder(V data, BiConsumer<N, V> buildFn) {
-			this.data = data;
-			this.buildFn = buildFn;
-			this.targetNode = root();
-		}
-
-		// SETTER FNS
-		// ///////////////////////////////////////////////////////////////////
-
-		public TreeBuilder<V> setFn(BiConsumer<N, V> buildFnIn) {
-			this.buildFn = buildFnIn;
-			return this;
-		}
-
-		public TreeBuilder<V> setData(V data) {
-			this.data = data;
-			return this;
-		}
-
-		public TreeBuilder<V> setNode(N targetNode) {
-			this.targetNode = targetNode;
-			return this;
-		}
-
-//		public TreeBuilder<T> makeTraversalFn() {	// traversal iterator runs buildfn before add children to queue
-//			if (buildFn == null)
-//				throw new IllegalStateException("build fn must be assigned before setting as traversal");
-//			this.isTraversalFn = true;
-//			traversalOrder = dft(data, buildFn);
+//	public class TreeBuilder<V> {
+//		public N targetNode;
+//		public BiConsumer<N, V> buildFn;
+//		public V data;
+////		public Iterable<N> traversalOrder = dft();
+//		
+////		Function<Node,String> splitType; // need subclass?
+//		Function<N,Integer> depthFn;
+//		Function<N,Integer> childCountFn;
+//		BiConsumer<N,N> addChildFn = (n,c) -> n.addChild(c);
+//		
+//
+//		public TreeBuilder() {
+//			this.targetNode = root();
+//		}
+//
+//		public TreeBuilder(V data, BiConsumer<N, V> buildFn) {
+//			this.data = data;
+//			this.buildFn = buildFn;
+//			this.targetNode = root();
+//		}
+//
+//		// SETTER FNS
+//		// ///////////////////////////////////////////////////////////////////
+//
+//		public TreeBuilder<V> setFn(BiConsumer<N, V> buildFnIn) {
+//			this.buildFn = buildFnIn;
 //			return this;
 //		}
-
-		// TERMINAL FNs ///////////////////////////////////////////////////////////
-
-		public void generate() {	// if already has children, move to children without running fn?
-			buildFn.accept(targetNode, data);
-		}
-		public void generateForEach() {
-			traversalOrder = dft(data, buildFn);
-			for (N n : traversalOrder) continue;
-		}
-
-		
-		// TYPE SPECIFIC FNS ///////////////////////////////////////////////////////
-
-		public TreeBuilder<Integer[]> leafChildCount(int leafs, int maxChildren) {
-			return new TreeBuilder<Integer[]>(new Integer[] { leafs, maxChildren }, fns.makeLeafs).setNode(targetNode);
-		}
-		
-		BiConsumer<N,V> recursiveBuild = ( n, t ) -> {
-			if( n.depth < depthFn.apply(n) ) {
-				for( int i = 0; i < childCountFn.apply(n); i++ )
-					n.addChild();
-			}
-				
-		};
-		
-		public interface FunctionalBuilder{
-			
-		}
-	}
+//
+//		public TreeBuilder<V> setData(V data) {
+//			this.data = data;
+//			return this;
+//		}
+//
+//		public TreeBuilder<V> setNode(N targetNode) {
+//			this.targetNode = targetNode;
+//			return this;
+//		}
+//
+////		public TreeBuilder<T> makeTraversalFn() {	// traversal iterator runs buildfn before add children to queue
+////			if (buildFn == null)
+////				throw new IllegalStateException("build fn must be assigned before setting as traversal");
+////			this.isTraversalFn = true;
+////			traversalOrder = dft(data, buildFn);
+////			return this;
+////		}
+//
+//		// TERMINAL FNs ///////////////////////////////////////////////////////////
+//
+//		public void generate() {	// if already has children, move to children without running fn?
+//			buildFn.accept(targetNode, data);
+//		}
+////		public void generateForEach() {
+////			traversalOrder = dft(data, buildFn);
+////			for (N n : traversalOrder) continue;
+////		}
+//
+//		
+//		// TYPE SPECIFIC FNS ///////////////////////////////////////////////////////
+//
+//		public TreeBuilder<Integer[]> leafChildCount(int leafs, int maxChildren) {
+//			return new TreeBuilder<Integer[]>(new Integer[] { leafs, maxChildren }, fns.makeLeafs).setNode(targetNode);
+//		}
+//		
+//		BiConsumer<N,V> recursiveBuild = ( n, t ) -> {
+//			if( n.depth < depthFn.apply(n) ) {
+//				for( int i = 0; i < childCountFn.apply(n); i++ )
+//					n.addChild();
+//			}
+//				
+//		};
+//		
+//		public interface FunctionalBuilder{
+//			
+//		}
+//	}
 
 	// PRINT OPERATIONS
 	// //////////////////////////////////////////////////////////////////////
