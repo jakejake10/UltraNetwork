@@ -92,6 +92,8 @@ public abstract class AbstractTree<T extends AbstractTree<T,N>,N extends Abstrac
  		return out;
 	}
 	
+	
+	
 
 
 	
@@ -228,7 +230,7 @@ public abstract class AbstractTree<T extends AbstractTree<T,N>,N extends Abstrac
 
 	public <E> void printList(List<E> inputList) {
 		System.out.println( indentStringLines( createPrintFn( n -> "node"
-				+ (n.get(inputList) != null && n.get(inputList).toString() != null ? " - " + n.get(inputList) : ""))));
+				+ (n.get(inputList) != null ? " - " + n.get(inputList) : " (null)"))));
 	}
 	
 	

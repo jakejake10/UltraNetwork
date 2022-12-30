@@ -4,6 +4,9 @@ import utCore.*;
 import pFns_general.PFns;
 import java.util.List;
 
+import pFns_baseObjects.Boundary;
+
+
 
 public class ARNode extends AbstractNode<ARTree, ARNode> {
 	public String splitDir = "";
@@ -99,11 +102,11 @@ public class ARNode extends AbstractNode<ARTree, ARNode> {
 
 	///////////////////////////////////////////////////////
 
-	public float calcARFromChildren() {
+	public float calcARFromLeafs() {
 		if ( hasChildren() ) {
 			float arSum = 0;
 			for (ARNode child : children() )
-				arSum += splitDir == "v" ? child.calcARFromChildren() : 1 / child.calcARFromChildren();
+				arSum += splitDir == "v" ? child.calcARFromLeafs() : 1 / child.calcARFromLeafs();
 			ar = splitDir == "v" ? arSum : 1 / arSum;
 		}
 		return ar;
@@ -112,6 +115,18 @@ public class ARNode extends AbstractNode<ARTree, ARNode> {
 	
 	public String toString() {
 		return "ar = " + ar + ", splitDir = " + splitDir + super.toString();
+	}
+	
+	public void importRect( Boundary input, List<Boundary> treeRects ) {
+		importData( input, treeRects, (n,list) -> n.ar = n.get(list).w/ n.get( list ).h );
+//		for( ARNode n : this )
+//			if( n.get(treeRects) != null ) n.ar = n.get(treeRects).w/ n.get( treeRects ).h ;
+	}
+	
+	public void importRect( List<Boundary> input, List<Boundary> treeRects ) {
+		importData( input, treeRects, (n,list) -> n.ar = n.get(list).w/ n.get( list ).h );
+//		for( ARNode n : this )
+//			if( n.get(treeRects) != null ) n.ar = n.get(treeRects).w/ n.get( treeRects ).h ;
 	}
 	
 	

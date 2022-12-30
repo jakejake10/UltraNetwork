@@ -159,9 +159,14 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 	}
 	
 	public int getLeafSize( int input ) {
-		if(!hasChildren() ) return 1;
 		int out = 0;
-		for( AbstractNode<T,N> node : children() ) out+= node.getLeafSize();
+		while( leafs().iterator().hasNext() ) out++ ;
+		return out;
+	}
+	
+	public int getTreeSize() {
+		int out = 0;
+		while( iterator().hasNext() ) out++;
 		return out;
 	}
 	
@@ -183,6 +188,25 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 	public <E> void setVal( E val, List<E> inputList ){
 		if( myLoc != inputList.size() ) inputList.set(myLoc, val);
 		else  inputList.add(val);
+	}
+	
+	// LIST FNS ///////////////////////////////////////////
+	
+	public <E> void importData( E input, List<E> dataList, BiConsumer<N,List<E>> modifyFn ){
+		if( dataList.size() < myTree.size() ) while( dataList.size() < myTree.size() ) dataList.add(null);
+		addChild();
+		lastChild().setVal(input, dataList);
+		modifyFn.accept( lastChild(), dataList);
+	}
+	
+	public <E> void importData( List<E> input, List<E> dataList, BiConsumer<N,List<E>> modifyFn ){
+		if( dataList.size() < myTree.size() ) while( dataList.size() < myTree.size() ) dataList.add(null);
+		int originalChildCt = size;
+		for( int i = 0; i < input.size(); i++ )  addChild();
+		for( int i = originalChildCt; i < size; i++ ) {
+			get(i).setVal(input.get(i), dataList);
+			modifyFn.accept( get(i), dataList);
+		}
 	}
 	
 	

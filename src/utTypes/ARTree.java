@@ -66,27 +66,64 @@ public class ARTree extends AbstractTree<ARTree, ARNode> {
 	};
 	
 	
-//	public BiFunction<ARNode,Float[],List<Boundary>> generateBounds = ( n,xywh ) -> {
-//		List<Boundary> out = new ArrayList<>();
-//		out.add( new Boundary( xywh[0],xywh[1],xywh[2],xywh[3]  ) );
-//		if( n.hasChildren() ) {
-//			float changePos =   n.splitDir.equals("v") ? xywh[0] : xywh[1];
-//			float constantDim = n.splitDir.equals("v") ? xywh[3] : xywh[2];
-//			float constantPos = n.splitDir.equals("v") ? xywh[1] : xywh[0];
-//			
-//			for( ARNode child : n.children() ) {
-//				Float myDim = child.changeVal( constantDim );
-//				Float[] childDims;
-//				if( n.splitDir.equals("v" ) )
-//					childDims = new Float[] { changePos,constantPos,myDim,constantDim };
-//				else 
-//					childDims = new Float[] { constantPos,changePos,constantDim,myDim };
-//				out.addAll( this.generateBounds.apply( child, childDims ) );
-//				changePos += myDim;
-//			}
-//		}
-//		return out;
-//	};
+	public void whFromLeafs( List<Boundary> rectList ) {
+		whFromLeafs.accept( root(), rectList );
+	}
+	
+	BiConsumer<ARNode,List<Boundary>> whFromLeafs = (n,list) ->{		// leaf list of rects
+		if( n.isLeaf() ) return;
+		else {
+			float w = 0; 
+			float h = 0;
+			float maxElem = 0;
+			for( ARNode child : n.children() ) {
+				if( child.get(list) == null ) this.whFromLeafs.accept( child, list );
+				if( n.splitDir.equals("v" ) ) {
+					w+=child.get(list).w;
+					float ch = child.get(list).h;
+					if( ch > maxElem ) maxElem = ch;
+				}
+				else {
+					h+=child.get(list).h;
+					float cw = child.get(list).w;
+					if( cw > maxElem ) maxElem = cw;
+				}
+			}
+			if( n.splitDir.equals("v") ) n.setVal( new Boundary(0,0,w, maxElem ), list );
+			else                         n.setVal( new Boundary(0,0,maxElem, h ), list );
+		}
+	};
+	
+	public void arrangeRectsXY( float x, float y, List<Boundary> data ) {
+		root().get( data ).x = x;
+		root().get( data ).y = y;
+		arrangeRects( root(), data );
+	}
+	
+	public void arrangeRects( ARNode node, List<Boundary> data ) {
+		if( !node.hasChildren() ) return;
+		float changeVal = node.splitDir.equals("v") ? node.get(data).x : node.get(data).y;
+		for( int i = 0; i < node.size; i++ ) {
+			if( node.splitDir.equals("v" ) ) {
+				float childX = changeVal;
+				float childY = node.get(data).y;
+				node.get(i).get(data).x = childX;
+				node.get(i).get(data).y = childY;
+				changeVal += node.get(i).get(data).w;
+			} else {
+				float childX = node.get(data).x;
+				float childY = changeVal;
+				node.get(i).get(data).x = childX;
+				node.get(i).get(data).y = childY;
+				changeVal += node.get(i).get(data).h;
+			}
+			arrangeRects( node.get(i), data );
+		}
+	}
+	
+	
+	
+	
 	
 	
 
