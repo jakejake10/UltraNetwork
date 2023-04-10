@@ -7,6 +7,9 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="lib" path="lib/core.jar"/>
+	<classpathentry kind="lib" path="D:/Documents/Processing/libraries/UltraValue/library/UltraValue.jar"/>
+	<classpathentry kind="lib" path="D:/Documents/Processing/libraries/UltraShape/library/UltraShape.jar"/>
+	<classpathentry kind="lib" path="D:/Documents/Processing/libraries/UltraGrid/library/UltraGrid.jar"/>
 	<classpathentry kind="lib" path="D:/Documents/Processing/libraries/pFunctions/library/pFunctions.jar"/>
 	<classpathentry kind="output" path="resources/code"/>
 </classpath>

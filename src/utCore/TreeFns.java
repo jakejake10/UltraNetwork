@@ -3,8 +3,6 @@ package utCore;
 import java.util.List;
 import java.util.function.*;
 
-import pFns_baseObjects.Boundary;
-
 
 
 public class TreeFns<T extends AbstractTree<T,N>,N extends AbstractNode<T,N>> {
@@ -16,12 +14,12 @@ public class TreeFns<T extends AbstractTree<T,N>,N extends AbstractNode<T,N>> {
 	  // NODE/DATA FNS /////////////////////////////////////////////////////
 	  //////////////////////////////////////////////////////////////////////
 	  
-	public BiFunction<N,Void,Integer> getLeafCount = (n,v) -> {
-	    if( !n.hasChildren() ) return 1;
-	      int leafs = 0;
-//	      for( N nChild : n ) leafs += this.getLeafCount.apply( nChild, null );
-	      return leafs;
-	  };
+//	public BiFunction<N,Void,Integer> getLeafCount = (n,v) -> {
+//	    if( !n.hasChildren() ) return 1;
+//	      int leafs = 0;
+////	      for( N nChild : n ) leafs += this.getLeafCount.apply( nChild, null );
+//	      return leafs;
+//	  };
 	  
 	  
 	  
@@ -36,13 +34,13 @@ public class TreeFns<T extends AbstractTree<T,N>,N extends AbstractNode<T,N>> {
 	  
 	  // NODE ARRAY ////////////////////////////////////////////////////////////////
 	  
-	  public BiConsumer<N,List<N>> getLeafs = (n,d) -> {
-	    if( !n.hasChildren() ){
-	      d.add( n );
-	      return;
-	    }
-//	    for( N nChild : n ) this.getLeafs.accept( nChild, d );
-	  };
+//	  public BiConsumer<N,List<N>> getLeafs = (n,d) -> {
+//	    if( !n.hasChildren() ){
+//	      d.add( n );
+//	      return;
+//	    }
+////	    for( N nChild : n ) this.getLeafs.accept( nChild, d );
+//	  };
 	  
 	  
 	  // Integer Array /////////////////////////////////////////////////////////////
