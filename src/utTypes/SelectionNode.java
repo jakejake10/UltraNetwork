@@ -67,9 +67,9 @@ public class SelectionNode<T> extends AbstractNode<SelectionTree<T>,SelectionNod
 		}
 		else normSelectionVal = (float)Math.random();
 		
-		if( probability == null && probVals.size() == getChildCount() )
-			probability = new RangeObject( getChildCount() ).setValues( probVals ).sumSequenceAddStart();
-		if( probability != null )  return probability.getContainingDelta( normSelectionVal ) - 1;	//modify ro.gtd() to sub 1
+//		if( probability == null && probVals.size() == getChildCount() )
+//			probability = new RangeObject( getChildCount() ).setValues( probVals ).sumSequenceAddStart();
+//		if( probability != null )  return probability.getContainingDelta( normSelectionVal ) - 1;	//modify ro.gtd() to sub 1
 		
 		return (int) ( normSelectionVal * getChildCount() );
 	}
@@ -124,7 +124,7 @@ public class SelectionNode<T> extends AbstractNode<SelectionTree<T>,SelectionNod
 	
 	public void setProbability( float...probs ) {
 		if( probs.length != getChildCount() ) return;
-		probability = new RangeObject( getChildCount() ).setValues(probs).sumSequenceAddStart();
+//		probability = new RangeObject( getChildCount() ).setValues(probs).sumSequenceAddStart();
 	}
 	
 	//////

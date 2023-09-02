@@ -15,7 +15,6 @@ import utCore.AbstractNode.DFTTraversal;
 
 public abstract class AbstractTree<T extends AbstractTree<T,N>,N extends AbstractNode<T,N>> implements Iterable<N> {
 	public List<N> nodes = new ArrayList<>();	// linkedlist instead? better for removing nodes w many children?
-	public TreeFns<T,N> fns = new TreeFns<>();
 		
 	
 	public AbstractTree() {
@@ -54,7 +53,7 @@ public abstract class AbstractTree<T extends AbstractTree<T,N>,N extends Abstrac
 	// ABSTRACT FNS ///////////////////////////////////////////////////
 	
 	public abstract T getInstance();
-	public abstract N nodeDefaultConstructor();
+	public abstract N nodeDefaultConstructor();	// needed because new instance of generic class cannot be created statically
 	
 
 	// GET FNS ////////////////////////////////////////////////////////

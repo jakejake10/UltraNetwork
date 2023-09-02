@@ -6,8 +6,12 @@ import java.util.Queue;
 import java.util.Stack;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.function.*;
+import java.util.stream.*;
+
 import pFns_general.PFns;
+import utTypes.BasicNode;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -29,6 +33,42 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 	}
 	
 	
+	/**
+	 * used for converting subclasses to universal basicnode structure
+	 * traverse through tree, copying all core data to new nodes
+	 * from this, one subclass can be built with structure of another
+	 * leafNodeFn is used to create a specific node with data from referenced element, vs just a default node
+	 */
+	
+	public <E extends AbstractNode<?,E>> N buildWithStructureFrom( E nodeIn ) {
+		initTree();
+		copyFieldsFromTo( nodeIn,this );
+		for( int i = 1; i < nodeIn.tree.nodes.size(); i++ ) {
+			N newNode = defaultConstructor();
+			newNode.tree = tree;
+			copyFieldsFromTo( nodeIn.tree.nodes.get(i), newNode );
+			tree.nodes.add( newNode );
+		}
+		return getInstance();
+	}
+	
+	public <E extends AbstractNode<?,E>> N buildWithStructureFromWithLeafFn( E nodeIn, Function<E,N> leafNodeFn ) {
+		initTree();
+		copyFieldsFromTo( nodeIn,this );
+		for( int i = 1; i < nodeIn.tree.nodes.size(); i++ ) {
+			N newNode;
+			if( nodeIn.tree.nodes.get(i).isLeaf() )
+				newNode = leafNodeFn.apply(nodeIn.tree.nodes.get(i));
+			else
+				newNode= defaultConstructor();
+			newNode.tree = tree;
+			copyFieldsFromTo( nodeIn.tree.nodes.get(i), newNode );
+			tree.nodes.add( newNode );
+		}
+		return getInstance();
+	}
+	
+	
 	// start w standalone node, create tree, add this as root
 	public N initTree() {
 		T par = treeDefaultConstructor();
@@ -39,9 +79,10 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 	
 	// ABSTRACT FNS /////////////////////////////////////////////////////////////////
 	
+	
 	public abstract N defaultConstructor();
 	public abstract N getInstance();
-	public abstract T treeDefaultConstructor(); 
+	public abstract T treeDefaultConstructor(); 	// just call t.getInstance so independent node can create its own tree
 	
 	// CHILDREN ///////////////////////////////////////////////////
 	
@@ -71,7 +112,7 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 	public <E> void addChild(E input, List<E> treeData, int...index ) {
 		N c = defaultConstructor();
 		addChild( c, index );
-		if( treeData.size() == 0 ) fillList( treeData );
+		if( treeData.size() == 0 ) makeList( treeData );
 		if( c.myLoc != treeData.size() ) treeData.add( c.myLoc, input );
 		else  treeData.add( input );
 	}
@@ -152,8 +193,9 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 	// GET FNS ////////////////////////////////////////////////////////////////
 
 	
-	public N get(int index) {
-		return  tree.nodes.get( firstChild + index );
+	public N get(int childIndex ) {
+		if( firstChild == -1 ) throw new NoSuchElementException( "Node (root) -> " + this.locationCode() + ": has no children");
+		return tree.nodes.get( firstChild + childIndex );
 	}
 		
 	
@@ -166,8 +208,8 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 		else return myLoc - parent().firstChild;
 	}
 	
-	public AbstractNode<T,N> getRoot() {
-		return hasParent() ? parent() : this;
+	public N getRoot() {
+		return hasParent() ? parent().getRoot() : getInstance();
 	}
 	
 	public N lastChild() {
@@ -189,6 +231,61 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 		return data;
 	}
 	
+	/*
+	 * runs selector fn at each level to get next child until leaf is reached
+	 */
+	public N getLeafIndexSelectorFn( Function<N,Integer> childSelectionFn ) {
+		if( hasChildren() ) return get( childSelectionFn.apply(getInstance()) ).getLeafIndexSelectorFn( childSelectionFn );
+		else return getInstance();
+	}
+	
+	public N getLeafSelectorFn( Predicate<N> childSelectionFn ) {	// returns first match
+		if( hasChildren() ) {
+			for( N node : children() ) {
+				if( childSelectionFn.test(node) )
+					return node.getLeafSelectorFn( childSelectionFn );
+			}
+			return null;
+		}
+		else return getInstance();
+	}
+	
+	 public List<N> getLeafsSelectorFn( Predicate<N> childSelectionFn ) {
+		 List<N> out = new ArrayList<N>();
+		 getLeafsSelectorFnRecursive( out, childSelectionFn );
+		 return out;
+	 }
+	 
+	 void getLeafsSelectorFnRecursive( List<N> foundLeafs, Predicate<N> childSelectionFn ) {
+		if( hasChildren() ) {
+			for( N node : children() )
+				if( childSelectionFn.test(node) )
+					node.getLeafsSelectorFnRecursive( foundLeafs, childSelectionFn );
+		}
+		else foundLeafs.add( getInstance() );
+	}
+	
+	/*
+	 * gets all leafs and then filters based on predicate
+	 */
+	public List<N> getFilteredLeafs( Predicate<N> selectionFn ){
+		List<N> out = new ArrayList<>();
+		for( N node : getLeafs() ) if( selectionFn.test(node) ) out.add(node);
+		return out;
+	}
+	
+	public int getMaxDepth() {
+		if( hasChildren() ) {
+			int maxChildDepth = depth;
+			for( N node : children() ) {
+				int curDepth = node.getMaxDepth();
+				if( curDepth > maxChildDepth ) maxChildDepth = curDepth;
+			}
+			return maxChildDepth;
+		}
+		
+		return depth;
+	}
 	public List<N> getDepth( int targetLevel ){
 		return getDepth( new ArrayList<N>(), targetLevel );
 	}
@@ -200,15 +297,22 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 		return data;
 	}
 	
+	public <E> List<E> getChildData( Function<N,E> fn ){
+		List<E> out = new ArrayList<>();
+		for( N child : children() ) out.add( fn.apply(child) );
+		return out;
+	}
+	
 	public int getChildCount() {
 		return size;
 	}
 	
 	
 	public int leafSize() {
-		int out = 0;
-		while( leafs().iterator().hasNext() ) out++ ;
-		return out;
+//		int out = 0;
+//		while( leafs().iterator().hasNext() ) out++ ;
+//		return out;
+		return getLeafs().size();
 	}
 	
 	public int treeSize() {
@@ -218,8 +322,15 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 	}
 
 
-
-		
+	public String locationCode() {
+		return locationCodeFn( "" ); 
+	}
+	
+	String locationCodeFn( String code ) {
+		if( hasParent() ) return parent().locationCodeFn( Integer.toString( indexInParent() ) + code );
+		else return code;
+	}
+	
 	
 	
 	
@@ -236,20 +347,32 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 	}
 	
 	public <E> void setElem( E val, List<E> treeData ){
-		if( treeData.size() < tree.nodes.size() ) fillList( treeData );
+		if( treeData.size() < tree.nodes.size() ) makeList( treeData );
 		if( myLoc != treeData.size() ) treeData.set(myLoc, val);
 		else  treeData.add(val);
 	}
 	
 	public <E> void addElem( E val, List<E> treeData ){
-		if( treeData.size() == 0 ) fillList( treeData );
+		if( treeData.size() == 0 ) makeList( treeData );
 		if( myLoc != treeData.size() ) treeData.add(myLoc, val);
 		else  treeData.add(val);
 	}
 	
 	
-	public <E> void fillList( List<E> treeData ) {
+	public <E> List<E> getElems(List<N> nodeList, List<E> inputList) {
+		return nodeList.stream().map( n -> n.getElem(inputList) ).collect( Collectors.toList() );
+	}
+	
+	
+	
+	public <E> void makeList( List<E> treeData ) {
 		while( treeData.size() < tree.nodes.size() ) treeData.add(null);
+	}
+	
+	public <E> List<E> makeList( E... val ) {
+		List<E> out = new ArrayList<>();
+		while( out.size() < tree.nodes.size() ) out.add( val.length > 0 ? val[0] : null );
+		return out;
 	}
 	
 	
@@ -264,7 +387,15 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 //		}
 //	}
 	
-	
+	// ORDER CHANGE ////////////////////////////////////////
+
+	public void reverse() {
+//		Collections.reverse(children); ??? how to do this? reverse index positions somehow?
+	}
+
+	public void shuffle() {
+//		Collections.shuffle(children);  ???
+	}
 	
 	
 	
@@ -454,6 +585,21 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 			// Default throws UnsupportedOperationException.
 		}
 	}
+	
+	
+	// UTILITY FNS ////////////////////////////////////////
+	
+	public <E extends AbstractNode<?,?>> void copyFieldsFromTo( E from, E to ) {
+		to.parentLoc =  from.parentLoc;
+		to.myLoc =      from.myLoc;
+		to.firstChild = from.firstChild;
+		to.size =       from.size;
+		to.dataLoc =    from.dataLoc;
+		to.depth =      from.depth;
+	}
+	
+	
+	// PRINT FNS //////////////////////////////////////////
 
 	public String toString() {
 		return "parentLoc = " + parentLoc + ", myLoc = " + myLoc + ", size = " + size + ", depth = " + depth
