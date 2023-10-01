@@ -20,13 +20,11 @@ import uvCore.UVConstants;
 
 
 
-public class UT_BasicTreeNode extends PApplet {
+public class UT_ExternalListModifier extends PApplet {
 	BasicNode root;
-	List<Float> vals = new ArrayList<>();
-	List<Float> vals2;
 	
 	public static void main(String... args) {
-		UT_BasicTreeNode pt = new UT_BasicTreeNode();
+		UT_ExternalListModifier pt = new UT_ExternalListModifier();
 		PApplet.runSketch(new String[] { "Test" }, pt);
 	}
 
@@ -38,7 +36,6 @@ public class UT_BasicTreeNode extends PApplet {
 	@Override
 	public void setup() {
 		noLoop();
-		
 		root = new BasicNode().initTree();
 			root.addChild();
 			root.addChild();
@@ -46,23 +43,11 @@ public class UT_BasicTreeNode extends PApplet {
 			
 		root.get(1).addChild();
 		
-		for( int i = 0; i < root.size(); i++ ) vals.add( (float) i );
-		
-//		root.modifyElems( n -> n.getLeafs(), f -> f * 4, vals );
-//		vals2 = root.makeList( (n,f) -> f * 4, vals );
-//		vals2 = root.makeList( (n,f) -> n.sum( BasicNode::getChildren, vals ), vals );
-//		root.modifyElems( (n,f) -> f.hasChildren(), null);
 	}
 
 	@Override
 	public void draw() {
-//		root.tree.printOperation( n -> n.getElem(vals) );
-//		println();
-		
-//		root.tree.printOperation( n -> n.getElem(vals2) );
-		for( BasicNode n : root.dfs() ) println( n.getElem(vals) );
-		println();
-		for( BasicNode n : root.bfs() ) println( n.getElem(vals) );
+		println( root.tree );
 		println( "done" );
 	}
 

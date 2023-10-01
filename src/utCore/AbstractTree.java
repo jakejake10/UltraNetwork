@@ -8,7 +8,6 @@ import java.util.Stack;
 import java.util.stream.*;
 
 import pFns_general.PFns;
-import utCore.AbstractNode.DFTTraversal;
 
 
 //import processing.core.*;
@@ -140,7 +139,7 @@ public abstract class AbstractTree<T extends AbstractTree<T,N>,N extends Abstrac
 		return leafs( root() );
 	}
 	public Iterable<N> leafs( N baseNode ){
-		return baseNode.leafs();
+		return baseNode.getLeafs();
 	}
 	
 	
