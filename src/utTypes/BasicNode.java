@@ -3,8 +3,8 @@ package utTypes;
 import java.util.Iterator;
 import java.util.List;
 
-import utCore.AbstractNode;
-import utCore.AbstractTree;
+import unCore.AbstractNode;
+import unCore.AbstractTree;
 
 /*
  * most basic implementation of abstract tree / node

@@ -1,4 +1,4 @@
-package utCore;
+package unCore;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,6 +53,13 @@ interface NodeFunctions<N extends NodeFunctions<N> & Iterable<N> & Comparable<N>
 	public default <E> List<E> makeList( E fillValue ) {
 		List<E> out = new ArrayList<>();
 		while (out.size() < size())
+			out.add(fillValue);
+		return out;
+	}
+	
+	public static <E extends NodeFunctions<?>,R> List<R> makeList( List<E> nodeList, R fillValue ) {
+		List<R> out = new ArrayList<>();
+		while (out.size() < nodeList.size())
 			out.add(fillValue);
 		return out;
 	}
@@ -241,6 +248,7 @@ interface NodeFunctions<N extends NodeFunctions<N> & Iterable<N> & Comparable<N>
 			traversed = new boolean[startNode.treeSize()];
 			for (int i = 0; i < traversed.length; i++)
 				traversed[i] = false;
+			traversed[startNode.index()] = true;
 		}
 
 		public boolean hasNext() {
@@ -316,6 +324,7 @@ interface NodeFunctions<N extends NodeFunctions<N> & Iterable<N> & Comparable<N>
 			traversed = new boolean[startNode.treeSize()];
 			for (int i = 0; i < traversed.length; i++)
 				traversed[i] = false;
+			traversed[startNode.index()] = true;
 			this.nodeGatheringFn = nodeGatheringFn;
 		}
 

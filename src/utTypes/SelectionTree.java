@@ -5,7 +5,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import utCore.*;
+import unCore.*;
 import uvCore.RangeObject;
 
 public class SelectionTree<T> extends AbstractTree<SelectionTree<T>,SelectionNode<T>>{

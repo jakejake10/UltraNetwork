@@ -1,4 +1,4 @@
-package utCore;
+package unCore;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -323,6 +323,25 @@ public abstract class AbstractTree<T extends AbstractTree<T,N>,N extends Abstrac
 			listOut.add( emptyVal.get() );
 		root().applyThenToChildren( n -> { if( n.dataLoc != -1 ) listOut.set( n.myLoc, listIn.get( n.dataLoc ) ); } );
 		return listOut;
+	}
+	
+	
+	@Override
+	public boolean equals(Object other){
+	    if (other == null) return false;
+	    if (other == this) return true;
+	    if (!(other instanceof AbstractTree ) ) return false;
+	    AbstractTree<?,?> otherMyClass = (AbstractTree<?,?>)other;
+	    if( nodes.size() == otherMyClass.nodes.size() ) {
+	    	boolean match = true;
+	    	for( int i = 0; i < nodes.size(); i++ ) 
+	    		if( nodes.get(i) != otherMyClass.nodes.get(i) ) {
+	    			match = false;
+	    			break;
+	    		}
+	    	if( match ) return true;
+	    }
+	    return false;
 	}
 
 

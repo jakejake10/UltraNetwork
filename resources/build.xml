@@ -162,20 +162,22 @@ ${line}
 	  	<mkdir dir="${project.tmp}/${project.name}/${folder}" />
   		<mkdir dir="${project.tmp}/${project.name}/examples" />
 	  	<mkdir dir="${project.tmp}/${project.name}/reference" />
-  		<mkdir dir="${project.tmp}/${project.name}/src" />
+		<mkdir dir="${project.tmp}/${project.name}/src" />
+		
   		<copy todir="${project.tmp}/${project.name}/examples">
   			<fileset dir="${project.examples}">
 	  			<exclude name="**/*README*"/>
   			</fileset>
 	  	</copy>
+		<!-- added excludes test -->
   		<copy todir="${project.tmp}/${project.name}/src">
-  			<fileset dir="${project.src}"/>
+  			<fileset dir="${project.src}" excludes="**/*test/*.*"/>
 	  	</copy>
 	  	<copy todir="${project.tmp}/${project.name}/${folder}"> 
-	  		<!-- <fileset dir="${project.lib}" excludes="*.*" /> -->
-	  		<fileset dir="${project.lib}" excludes="README/** core.jar/** 
+	  		 <fileset dir="${project.lib}" excludes="*.*" />
+	  		<!--<fileset dir="${project.lib}" excludes="README/** core.jar/** 
 	  			  			pFunctions.jar/** PGS.jar/** geomerative.jar/**
-	  			  			svg.jar/**" /> <!-- modified to exclude core! -->
+	  			  			svg.jar/**" /> modified to exclude core! -->
 	  	</copy>
 	</target>
 	

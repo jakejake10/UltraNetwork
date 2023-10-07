@@ -1,4 +1,4 @@
-package utCore;
+package unCore;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -774,6 +774,19 @@ public abstract class AbstractNode<T extends AbstractTree<T,N>,N extends Abstrac
 	
 	public class Recursive<I> {
 	    public I func;
+	}
+	
+	@Override
+	public boolean equals(Object other){
+	    if (other == null) return false;
+	    if (other == this) return true;
+	    if (!(other instanceof AbstractNode ) ) return false;
+	    AbstractNode<?,?> otherMyClass = (AbstractNode<?,?>)other;
+	    if( myLoc == otherMyClass.myLoc
+	    		&& size == otherMyClass.size
+	    		&& depth == otherMyClass.depth
+	    		&& dataLoc == otherMyClass.dataLoc ) return true;
+	    return false;
 	}
 	
 	

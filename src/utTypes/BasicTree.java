@@ -1,6 +1,6 @@
 package utTypes;
 
-import utCore.AbstractTree;
+import unCore.AbstractTree;
 
 /*
  * most basic implementation of abstract tree / node
