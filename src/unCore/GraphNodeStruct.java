@@ -23,24 +23,28 @@ public abstract class GraphNodeStruct<N extends GraphNodeStruct<N, D>, D> implem
 	public List<Edge> edges = new ArrayList<>();
 	
 	// GRAPH/TREE CONSTRUCTORS
-	public GraphNodeStruct( int...init ){	// root constructor
-		if( init == null || init.length == 0 ) {
-			core = makeCore();	// constructor() is root constructor
-			core.attach( getInstance() );
-			generateData();
-		}
-		// else constructor(0) means it is a null node
-	}
-	public GraphNodeStruct( N input ){	// root constructor
-		core.attach( input );
-		generateData();
+	public GraphNodeStruct( NoInput...initType ){	// root constructor
+		if( initType == null || initType.length == 0 ) NodeObj.nodeInitRoot(getInstance());
 	}
 	
-	public GraphNodeStruct( D input ){	// root constructor
-		if( nodeList() == null ) core = makeCore();	// constructor() is root constructor
-		core.attach( getInstance() );
-		setData( input );
-	}
+//	public GraphNodeStruct( int...init ){	// root constructor
+//		if( init == null || init.length == 0 ) {
+//			core = makeCore();	// constructor() is root constructor
+//			core.attach( getInstance() );
+//			generateData();
+//		}
+//		// else constructor(0) means it is a null node
+//	}
+//	public GraphNodeStruct( N input ){	// root constructor
+//		core.attach( input );
+//		generateData();
+//	}
+//	
+//	public GraphNodeStruct( D input ){	// root constructor
+//		if( nodeList() == null ) core = makeCore();	// constructor() is root constructor
+//		core.attach( getInstance() );
+//		setData( input );
+//	}
 	
 	// NODEOBJ INTERFACE /////////////////////////////////
 

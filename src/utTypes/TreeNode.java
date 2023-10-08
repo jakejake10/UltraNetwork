@@ -7,15 +7,20 @@ import unCore.*;
 
 public class TreeNode<D> extends TreeNodeStruct<TreeNode<D>, D> implements Iterable<TreeNode<D>>{
 
-	//NODE ABSTRACT METHODS ////////////////////////////////////////////////
-	public TreeNode( int...init ){	// root constructor
-		super( init );
+	//NODE CONSTRUCTORS ////////////////////////////////////////////////
+	public TreeNode( NoInput...initType ){	// root/null constructor
+		super(initType);
 	}
-	public TreeNode( TreeNode<D> input ){	// root constructor
-		super( input );
+	public TreeNode( TreeNode<D> input ){	// node constructor
+		NodeObj.nodeInitParChild( input, getInstance() );
 	}
-	public TreeNode( D data ){	// root constructor
-		super( data );
+	public TreeNode( D data ){	// root data constructor
+		this();
+		setData(data);
+	}
+	public TreeNode( TreeNode<D> input, D data ){	// node data constructor
+		this(input);
+		setData(data);
 	}
 
 	// NodeObjInterface
@@ -26,22 +31,24 @@ public class TreeNode<D> extends TreeNodeStruct<TreeNode<D>, D> implements Itera
 	
 
 	@Override
-	public TreeNode<D> defaultConstructor( int...init ) {
-		return new TreeNode<>( init );
+	public TreeNode<D> defaultConstructor() {
+		return new TreeNode<D>( new NoInput() );
 	}
-	@Override
-	public TreeNode<D> defaultConstructor( TreeNode<D> input ) {
-		return new TreeNode<>( input );
-	}
-	@Override
-	public TreeNode<D> defaultConstructor( D data ) {
-		return new TreeNode<>( data );
-	}
+
+//	@Override
+//	public TreeNode<D> defaultNodeConstructor( TreeNode<D> input ) {
+//		return new TreeNode<>( input );
+//	}
+//	@Override
+//	public TreeNode<D> defaultConstructor( D data ) {
+//		return new TreeNode<>( data );
+//	}
 	
 	@Override
 	public Iterator<TreeNode<D>> iterator() {
 		return nodeIterator();
 	}
+	
 	
 	
 	

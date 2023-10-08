@@ -7,16 +7,21 @@ import unCore.*;
 
 public class GraphNode<D> extends GraphNodeStruct<GraphNode<D>, D> implements Iterable<GraphNode<D>>{
 
-	//NODE ABSTRACT METHODS ////////////////////////////////////////////////
-	public GraphNode( int...init ){	// root constructor
-		super( init );
-	}
-	public GraphNode( GraphNode<D> input ){	// root constructor
-		super( input );
-	}
-	public GraphNode( D data ){	// root constructor
-		super( data );
-	}
+	//NODE CONSTRUCTORS ////////////////////////////////////////////////
+		public GraphNode( NoInput...initType ){	// root/null constructor
+			super(initType);
+		}
+		public GraphNode( GraphNode<D> input ){	// node constructor
+			NodeObj.nodeInitParChild( input, getInstance() );
+		}
+		public GraphNode( D data ){	// root data constructor
+			this();
+			setData(data);
+		}
+		public GraphNode( GraphNode<D> input, D data ){	// node data constructor
+			this(input);
+			setData(data);
+		}
 
 	// NodeObjInterface
 	@Override
@@ -26,17 +31,10 @@ public class GraphNode<D> extends GraphNodeStruct<GraphNode<D>, D> implements It
 	
 
 	@Override
-	public GraphNode<D> defaultConstructor( int...init ) {
-		return new GraphNode<>( init );
+	public GraphNode<D> defaultConstructor() {
+		return new GraphNode<D>( new NoInput() );
 	}
-	@Override
-	public GraphNode<D> defaultConstructor( GraphNode<D> input ) {
-		return new GraphNode<>( input );
-	}
-	@Override
-	public GraphNode<D> defaultConstructor( D data ) {
-		return new GraphNode<>( data );
-	}
+	
 	@Override
 	public Iterator<GraphNode<D>> iterator() {
 		return nodeIterator();

@@ -19,11 +19,14 @@ import java.util.LinkedList;
 public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D> {
 
 
+	
 	default void addNode() {	// basic add, not used where node placed at location
 		N newNode = defaultConstructor();
-		newNode.setIndex( totalSize() );
-		getCore().attach( newNode );
-		
+		nodeInitParChild( getInstance(), newNode);
+////		newNode.setIndex( totalSize() );
+////		getCore().attach( newNode );
+//		nodeList().add(newNode);
+////		newNode.setCore( getCore() );
 	}
 
 	// ABSRACT METHODS /////////////////////////////////////
@@ -33,11 +36,7 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D> {
 	public abstract int size();
 	
 	public abstract N getInstance();
-
-	public abstract N defaultConstructor( int...init );
-	public abstract N defaultConstructor( D data );
-	public abstract N defaultConstructor( N input );
-
+	
 	public abstract Function<N,List<N>> dfsNodeGatherFn();
 	public abstract Function<N,List<N>> bfsNodeGatherFn();
 
@@ -48,8 +47,56 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D> {
 	public abstract D getData();
 	public abstract void setData( D data );
 	
+	public abstract N defaultConstructor();
+//	public abstract N defaultConstructor( N input );
+//	public abstract N defaultRootConstructor();
+//	public abstract N defaultNodeConstructor();
+	// DEFAULT CONSTRUCTORS //////////////////////////////////
+	static <E extends NodeObj<E,R> & Iterable<E>,R> void nodeInitRoot( E node ) {
+		node.setCore( node.makeCore() );	// constructor() is root constructor
+		node.nodeList().add( node.getInstance() );	// only added to nodelist in root init, since will always be pos 0
+		node.generateData();
+	}
+	static <E extends NodeObj<E,R> & Iterable<E>,R> void nodeInitParChild( E par, E child ) {
+		child.setCore( par.getCore() );
+		// need to add child to nodelist(), done per add method
+		child.setIndex( par.totalSize() ); // can be overridden if not added at end of list
+		child.generateData();       // needs to be called again if new index assigned and data depends on index
+	}
+	
+	public default N newNode( N par ) {
+		N out = defaultConstructor();
+		nodeInitParChild( par, out );
+		return out;
+	}
+	
+//	public default N newRoot() {
+//		N out = defaultConstructor();
+//		nodeInitRoot(out);
+//		return out;
+//	}
+//	public static <E extends NodeObj<E,R> & Iterable<E>,R> void newNode( E node, R data ) {
+//		nodeInitRoot( node );
+//		node.setData( data );
+//	}
+	
+	
+	
+	
+	
 	
 	// BASE METHODS ////////////////////////////////////////
+	
+	default void rootInit() {
+		makeCore();	// constructor() is root constructor
+		nodeList().add( getInstance() );	// only added to nodelist in root init, since will always be pos 0
+		generateData();
+	}
+	
+//	default void nodeInit( N input ) {
+//		setCore( input.getCore() );
+//		generateData();
+//	}
 	
 	
 
@@ -208,6 +255,7 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D> {
 
 	public default void reverse(List<N> nodeList) {
 		Collections.reverse(nodeList);
+//		System.out.println("reverse");
 		customTreeUpdateFn();
 	}
 
@@ -228,6 +276,8 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D> {
 		dataList.sort(compare);
 		customTreeUpdateFn();
 	}
+	
+	
 
 
 	// ITERATORS ////////////////////////////////////////////////////////////////
@@ -371,16 +421,21 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D> {
 			this.indexReturnFn = inputFn;
 		}
 		
-		public void attach( T newNode ) {
-			nodeList.add(newNode);
-			newNode.setCore( this );
-		}
+//		public void attach( T newNode ) {
+//			nodeList.add(newNode);
+//			newNode.setCore( this );
+//		}
 		
 		
 		public void setDataGenerator( Function<T,D> generatorFn ) {
 			this.dataGeneratorFn = generatorFn;
 		}
+				
 		
 	}
+	
+	class NoInput {}	// input for a null node
 
 }
+
+
