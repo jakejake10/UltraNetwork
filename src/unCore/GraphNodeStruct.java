@@ -11,11 +11,10 @@ import java.util.stream.IntStream;
 
 import processing.core.PApplet;
 import processing.core.PVector;
-import usPrimitives.Circular;
 
 
 
-public abstract class GraphNodeStruct<N extends GraphNodeStruct<N, D> & Iterable<N>, D> implements NodeObj<N, D> {
+public abstract class GraphNodeStruct<N extends GraphNodeStruct<N, D>, D> implements NodeObj<N, D>, Iterable<N> {
 	// COMMON
 	NodeObj.CoreData<N, D> core;
 	D data;
@@ -35,6 +34,12 @@ public abstract class GraphNodeStruct<N extends GraphNodeStruct<N, D> & Iterable
 	public GraphNodeStruct( N input ){	// root constructor
 		core.attach( input );
 		generateData();
+	}
+	
+	public GraphNodeStruct( D input ){	// root constructor
+		if( nodeList() == null ) core = makeCore();	// constructor() is root constructor
+		core.attach( getInstance() );
+		setData( input );
 	}
 	
 	// NODEOBJ INTERFACE /////////////////////////////////
@@ -136,28 +141,28 @@ public abstract class GraphNodeStruct<N extends GraphNodeStruct<N, D> & Iterable
 
 		
 		
-		public void display( PApplet pa ) {
-			double step = ( Math.PI*2 ) / (double)totalSize();
-			List<PVector> pvs = IntStream.range(0,totalSize())
-					.mapToObj( i -> Circular.pvDistAngle( 250f,250f, 150f, (float) step*i ) ).collect( Collectors.toList() );
-			Set<Edge> edges = new HashSet<>();
-			for( N node : nodeList() ) edges.addAll( node.edges );
-			pa.stroke(0);
-			pa.fill(255);
-			pa.strokeWeight(1);
-			
-			for( Edge e : edges ) {
-				PVector st = pvs.get( e.src );
-				PVector ed = pvs.get( e.dest );
-				pa.line( st.x,st.y,ed.x,ed.y );
-			}
-			for( PVector pv : pvs ) pa.ellipse( pv.x,pv.y, 35, 35 );
-			
-			pa.fill(0);
-			pa.textSize( 20 );
-			pa.textAlign(processing.core.PApplet.CENTER, processing.core.PApplet.CENTER);
-			for( int i = 0; i < totalSize(); i++ ) pa.text( i, pvs.get(i).x,pvs.get(i).y -3 );
-		}
+//		public void display( PApplet pa ) {
+//			double step = ( Math.PI*2 ) / (double)totalSize();
+//			List<PVector> pvs = IntStream.range(0,totalSize())
+//					.mapToObj( i -> Circular.pvDistAngle( 250f,250f, 150f, (float) step*i ) ).collect( Collectors.toList() );
+//			Set<Edge> edges = new HashSet<>();
+//			for( N node : nodeList() ) edges.addAll( node.edges );
+//			pa.stroke(0);
+//			pa.fill(255);
+//			pa.strokeWeight(1);
+//			
+//			for( Edge e : edges ) {
+//				PVector st = pvs.get( e.src );
+//				PVector ed = pvs.get( e.dest );
+//				pa.line( st.x,st.y,ed.x,ed.y );
+//			}
+//			for( PVector pv : pvs ) pa.ellipse( pv.x,pv.y, 35, 35 );
+//			
+//			pa.fill(0);
+//			pa.textSize( 20 );
+//			pa.textAlign(processing.core.PApplet.CENTER, processing.core.PApplet.CENTER);
+//			for( int i = 0; i < totalSize(); i++ ) pa.text( i, pvs.get(i).x,pvs.get(i).y -3 );
+//		}
 		
 		// EDGE FNS ////////////////////////////////
 		

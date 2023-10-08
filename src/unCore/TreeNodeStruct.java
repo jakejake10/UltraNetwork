@@ -13,7 +13,7 @@ import java.util.stream.IntStream;
 
 import unCore.NodeObj.CoreData;
 
-public abstract class TreeNodeStruct<N extends TreeNodeStruct<N, D> & Iterable<N>, D> implements NodeObj<N, D> {
+public abstract class TreeNodeStruct<N extends TreeNodeStruct<N, D>, D> implements NodeObj<N, D>, Iterable<N> {
 	//COMMON
 	NodeObj.CoreData<N,D> core;
 	D data;
@@ -33,6 +33,12 @@ public abstract class TreeNodeStruct<N extends TreeNodeStruct<N, D> & Iterable<N
 			generateData();
 		}
 		// else constructor(0) means it is a null node
+	}
+	
+	public TreeNodeStruct( D input ){	// root constructor
+		if( nodeList() == null ) core = makeCore();	// constructor() is root constructor
+		core.attach( getInstance() );
+		setData( input );
 	}
 	
 	public TreeNodeStruct( N input ){	// root constructor
@@ -218,6 +224,40 @@ public abstract class TreeNodeStruct<N extends TreeNodeStruct<N, D> & Iterable<N
 				out.add(node);
 		return out;
 	}
+	
+	/*
+	 * runs selector fn at each level to get next child until leaf is reached
+	 */
+	public N getLeafIndexSelectorFn( Function<N,Integer> childSelectionFn ) {
+		if( hasChildren() ) return get( childSelectionFn.apply(getInstance()) ).getLeafIndexSelectorFn( childSelectionFn );
+		else return getInstance();
+	}
+	
+	public N getLeafSelectorFn( Predicate<N> childSelectionFn ) {	// returns first match
+		if( hasChildren() ) {
+			for( N node : getChildren() ) {
+				if( childSelectionFn.test(node) )
+					return node.getLeafSelectorFn( childSelectionFn );
+			}
+			return null;
+		}
+		else return getInstance();
+	}
+	
+	 public List<N> getLeafsSelectorFn( Predicate<N> childSelectionFn ) {
+		 List<N> out = new ArrayList<N>();
+		 getLeafsSelectorFnRecursive( out, childSelectionFn );
+		 return out;
+	 }
+	 
+	 void getLeafsSelectorFnRecursive( List<N> foundLeafs, Predicate<N> childSelectionFn ) {
+		if( hasChildren() ) {
+			for( N node : getChildren() )
+				if( childSelectionFn.test(node) )
+					node.getLeafsSelectorFnRecursive( foundLeafs, childSelectionFn );
+		}
+		else foundLeafs.add( getInstance() );
+	}
 
 	public int getMaxDepth() {
 		if (hasChildren()) {
@@ -277,6 +317,11 @@ public abstract class TreeNodeStruct<N extends TreeNodeStruct<N, D> & Iterable<N
 
 	// CHILD OPERATIONS //////////////////////////////////////////////
 
+	public void addChild( D data, int...index ) {
+		int newIndex = index.length > 0 ? index[0] : size;
+		addChild( index );
+		get(newIndex).setData( data );
+	}
 	public void addChild(int... index) {
 		if (index.length > 0)
 			addChild(defaultConstructor( 0 ), index[0]);
@@ -311,6 +356,7 @@ public abstract class TreeNodeStruct<N extends TreeNodeStruct<N, D> & Iterable<N
 		generateData();
 		size++;
 	}
+	
 
 //	public void addChild(TreeNode<D> child, int... index) {
 //		int childIndex = index.length == 0 || !hasChildren() || index[0] > size ? size : index[0];

@@ -12,41 +12,12 @@ import java.util.Comparator;
 import java.util.function.*;
 import java.util.stream.*;
 
-import pFns_general.PFns;
-import ugCore.Grid;
-import ugCore.Divider.Recursive;
-import unCore.NodeFunctions.BFSTraversal;
-import unCore.NodeFunctions.DFSTraversal;
-import utTypes.BasicNode;
 
 import java.util.Iterator;
 import java.util.LinkedList;
 
-public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D>   {
-//	CoreData core;
-//	public D data;
-	
+public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D> {
 
-//	public int index;
-
-//	public AbstractNode2( int...init ){	// root constructor
-//		if( init != null && init.length > 0 ) return;
-//		core = makeCore();
-//	}
-//	public AbstractNode2( N input ){	// root constructor
-//		core.attach( input );
-//	}
-	
-	
-//	AbstractNode2( N input ){
-//		input.core.attach( getInstance() );
-//	}
-	
-//	default void initNode() { // called in constructors, index should be overridden in location placement
-//		setIndex( totalSize() );
-//		getCore().attach( getInstance() );
-//		setData( getCore().dataGeneratorFn.apply( getInstance() ) );
-//	}
 
 	default void addNode() {	// basic add, not used where node placed at location
 		N newNode = defaultConstructor();
@@ -64,6 +35,7 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D>   {
 	public abstract N getInstance();
 
 	public abstract N defaultConstructor( int...init );
+	public abstract N defaultConstructor( D data );
 	public abstract N defaultConstructor( N input );
 
 	public abstract Function<N,List<N>> dfsNodeGatherFn();
@@ -77,15 +49,6 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D>   {
 	public abstract void setData( D data );
 	
 	
-//	public abstract Function<N, List<N>> nodeGatherFn();
-	// abstract List<N> nodeList();
-	// abstract void setNodeList( List<N> input );
-
-//	public static N createRoot() {
-//		throw new NoSuchElementException();
-//		return null;
-//	}
-	
 	// BASE METHODS ////////////////////////////////////////
 	
 	
@@ -98,7 +61,7 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D>   {
 	public default List<N> nodeList() {
 		return getCore().nodeList;
 	}
-//
+
 //	public default int index() {
 //		return index;
 //	}
@@ -106,13 +69,15 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D>   {
 	public default int totalSize() {
 		return nodeList().size();
 	}
+	
+	
 
 	// DATA METHODS ////////////////////////////////////////
 
 	
 
-	// LIST METHODS ////////////////////////////////////////
-
+//	// LIST METHODS ////////////////////////////////////////
+//
 	public default <E> List<E> makeList() {
 		List<E> out = new ArrayList<>();
 		return makeList(out);
@@ -125,7 +90,7 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D>   {
 		return out;
 	}
 
-	public static <E extends NodeFunctions<?>, R> List<R> makeList(List<E> nodeList, R fillValue) {
+	public static <E extends NodeObj<?,?>, R> List<R> makeList(List<E> nodeList, R fillValue) {
 		List<R> out = new ArrayList<>();
 		while (out.size() < nodeList.size())
 			out.add(fillValue);
@@ -187,7 +152,7 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D>   {
 			node.modifyList(modFn, dataList);
 	}
 
-	static <E> void checkDataList(NodeFunctions<?> node, List<E> dataList) {
+	static <E> void checkDataList(NodeObj<?,?> node, List<E> dataList) {
 		if (dataList == null)
 			dataList = new ArrayList<>();
 		if (dataList.size() < node.size())
@@ -264,18 +229,13 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D>   {
 		customTreeUpdateFn();
 	}
 
-//	Comparator<Integer>  nodeOrder = new Comparator<Item>( List<Integer> data ) {
-//	    public int compare(N node, List<Integer> data ) {
-//	        return Integer.compare(node.indexInParent(), data::get );
-//	    }
-//	};
 
 	// ITERATORS ////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////
 
-	public default Iterator<N> iterator() {
-		return nodeIterator();
-	}
+//	public default Iterator<N> iterator() {
+//		return nodeIterator();
+//	}
 	/*
 	 * iterator s as depth first traversal
 	 */
@@ -302,7 +262,7 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D>   {
 	}
 
 	// cant use size() in traversal, because size() fn uses traversal
-	public class BFSTraversal<T extends NodeObj<T, ?>  & Iterable<T>> implements Iterator<T> {
+	public class BFSTraversal<T extends NodeObj<T, ?> & Iterable<T>> implements Iterator<T> {
 		public Queue<T> traversal = new LinkedList<>();
 		boolean[] traversed;
 		public Function<T,List<T>> nodeGatheringFn;
@@ -344,10 +304,8 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D>   {
 	 * traverse a list of objects using node structure
 	 */
 
-//		public <E> Iterable<E> bfs( List<E> dataList ){
-//		}
-
-	public class DFSTraversal<T extends NodeObj<T, ?>  & Iterable<T>> implements Iterator<T> {
+	
+	public class DFSTraversal<T extends NodeObj<T, ?> & Iterable<T>> implements Iterator<T> {
 		public Stack<T> traversal = new Stack<>();
 		public Function<T,List<T>> nodeGatheringFn;
 		boolean[] traversed;
@@ -381,8 +339,8 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D>   {
 			// throws UnsupportedOperationException.
 		}
 	}
-	// CORE DATA FNS /////////////////////////////////
-	
+//	// CORE DATA FNS /////////////////////////////////
+//	
 	public default void generateData() {
 		setData( getCore().dataGeneratorFn.apply( getInstance() ) );
 	}

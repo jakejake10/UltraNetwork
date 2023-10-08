@@ -14,6 +14,9 @@ public class GraphNode<D> extends GraphNodeStruct<GraphNode<D>, D> implements It
 	public GraphNode( GraphNode<D> input ){	// root constructor
 		super( input );
 	}
+	public GraphNode( D data ){	// root constructor
+		super( data );
+	}
 
 	// NodeObjInterface
 	@Override
@@ -29,6 +32,10 @@ public class GraphNode<D> extends GraphNodeStruct<GraphNode<D>, D> implements It
 	@Override
 	public GraphNode<D> defaultConstructor( GraphNode<D> input ) {
 		return new GraphNode<>( input );
+	}
+	@Override
+	public GraphNode<D> defaultConstructor( D data ) {
+		return new GraphNode<>( data );
 	}
 	@Override
 	public Iterator<GraphNode<D>> iterator() {

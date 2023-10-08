@@ -14,6 +14,9 @@ public class TreeNode<D> extends TreeNodeStruct<TreeNode<D>, D> implements Itera
 	public TreeNode( TreeNode<D> input ){	// root constructor
 		super( input );
 	}
+	public TreeNode( D data ){	// root constructor
+		super( data );
+	}
 
 	// NodeObjInterface
 	@Override
@@ -31,8 +34,15 @@ public class TreeNode<D> extends TreeNodeStruct<TreeNode<D>, D> implements Itera
 		return new TreeNode<>( input );
 	}
 	@Override
+	public TreeNode<D> defaultConstructor( D data ) {
+		return new TreeNode<>( data );
+	}
+	
+	@Override
 	public Iterator<TreeNode<D>> iterator() {
 		return nodeIterator();
 	}
+	
+	
 	
 }

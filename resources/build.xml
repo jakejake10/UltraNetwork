@@ -170,14 +170,15 @@ ${line}
   			</fileset>
 	  	</copy>
 		<!-- added excludes test -->
-  		<copy todir="${project.tmp}/${project.name}/src">
+  		<!--<copy todir="${project.tmp}/${project.name}/src">
   			<fileset dir="${project.src}" excludes="**/*test/*.*"/>
-	  	</copy>
+	  	</copy>-->
+		<copy todir="${project.tmp}/${project.name}/src">
+		  			<fileset dir="${project.src}"/>
+			  	</copy>
 	  	<copy todir="${project.tmp}/${project.name}/${folder}"> 
-	  		 <fileset dir="${project.lib}" excludes="*.*" />
-	  		<!--<fileset dir="${project.lib}" excludes="README/** core.jar/** 
-	  			  			pFunctions.jar/** PGS.jar/** geomerative.jar/**
-	  			  			svg.jar/**" /> modified to exclude core! -->
+	  		<!-- <fileset dir="${project.lib}" excludes="*.*" /> -->
+	  		<fileset dir="${project.lib}" excludes="README/**" /> 
 	  	</copy>
 	</target>
 	
