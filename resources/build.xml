@@ -170,15 +170,15 @@ ${line}
   			</fileset>
 	  	</copy>
 		<!-- added excludes test -->
-  		<!--<copy todir="${project.tmp}/${project.name}/src">
+  		<copy todir="${project.tmp}/${project.name}/src">
   			<fileset dir="${project.src}" excludes="**/*test/*.*"/>
-	  	</copy>-->
-		<copy todir="${project.tmp}/${project.name}/src">
+	  	</copy>
+		<!--<copy todir="${project.tmp}/${project.name}/src">
 		  			<fileset dir="${project.src}"/>
-			  	</copy>
+			  	</copy>-->
 	  	<copy todir="${project.tmp}/${project.name}/${folder}"> 
-	  		<!-- <fileset dir="${project.lib}" excludes="*.*" /> -->
-	  		<fileset dir="${project.lib}" excludes="README/**" /> 
+	  		<fileset dir="${project.lib}" excludes="*.*" /> 
+	  		<!--<fileset dir="${project.lib}" excludes="README/**" /> -->
 	  	</copy>
 	</target>
 	
