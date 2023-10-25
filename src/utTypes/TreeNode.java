@@ -8,7 +8,7 @@ import unCore.*;
 public class TreeNode<D> extends TreeNodeStruct<TreeNode<D>, D> implements Iterable<TreeNode<D>>{
 
 	//NODE CONSTRUCTORS ////////////////////////////////////////////////
-	public TreeNode( NoInput...initType ){	// root/null constructor
+	public TreeNode( BaseNodeCommand...initType ){	// root/null constructor
 		super(initType);
 	}
 	public TreeNode( TreeNode<D> input ){	// node constructor
@@ -32,7 +32,7 @@ public class TreeNode<D> extends TreeNodeStruct<TreeNode<D>, D> implements Itera
 
 	@Override
 	public TreeNode<D> defaultConstructor() {
-		return new TreeNode<D>( new NoInput() );
+		return new TreeNode<D>( new BaseNodeCommand() );
 	}
 
 //	@Override

@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -19,11 +20,12 @@ public abstract class GraphNodeStruct<N extends GraphNodeStruct<N, D>, D> implem
 	NodeObj.CoreData<N, D> core;
 	D data;
 	int index;
+	UUID id = UUID.randomUUID();
 	//OTHER
 	public List<Edge> edges = new ArrayList<>();
 	
 	// GRAPH/TREE CONSTRUCTORS
-	public GraphNodeStruct( NoInput...initType ){	// root constructor
+	public GraphNodeStruct( BaseNodeCommand...initType ){	// root constructor
 		if( initType == null || initType.length == 0 ) NodeObj.nodeInitRoot(getInstance());
 	}
 	
@@ -119,6 +121,19 @@ public abstract class GraphNodeStruct<N extends GraphNodeStruct<N, D>, D> implem
 			return edges.stream().map( e -> nodeList().get( e.dest) ).collect( Collectors.toList());
 		}
 		
+		@SuppressWarnings("unchecked")
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) {
+				return true;
+			}
+			if (obj == null || getClass() != obj.getClass()) {
+				return false;
+			}
+			GraphNodeStruct<N,D> that = (GraphNodeStruct<N,D>) obj;
+			return this.id == that.id;
+		}
+		
 		// GRAPH METHODS /////////////////////////////////////////////////////
 		
 		public void addNodes(int size ) {
@@ -141,6 +156,15 @@ public abstract class GraphNodeStruct<N extends GraphNodeStruct<N, D>, D> implem
 
 		public void addEdge( int from, int to ) {
 			get(from).addEdge( to );
+		}
+		
+		@Override
+		public <R extends NodeObj<?,?>> void transferNodeDataTo( R input ) {
+			if( input instanceof GraphNodeStruct ) {
+				@SuppressWarnings("unchecked")
+				GraphNodeStruct<N,?> tnInput = (GraphNodeStruct<N,?>) input;
+				tnInput.index = index;
+			}
 		}
 
 		

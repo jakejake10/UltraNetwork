@@ -8,7 +8,7 @@ import unCore.*;
 public class GraphNode<D> extends GraphNodeStruct<GraphNode<D>, D> implements Iterable<GraphNode<D>>{
 
 	//NODE CONSTRUCTORS ////////////////////////////////////////////////
-		public GraphNode( NoInput...initType ){	// root/null constructor
+		public GraphNode( BaseNodeCommand...initType ){	// root/null constructor
 			super(initType);
 		}
 		public GraphNode( GraphNode<D> input ){	// node constructor
@@ -32,7 +32,7 @@ public class GraphNode<D> extends GraphNodeStruct<GraphNode<D>, D> implements It
 
 	@Override
 	public GraphNode<D> defaultConstructor() {
-		return new GraphNode<D>( new NoInput() );
+		return new GraphNode<D>( new BaseNodeCommand() );
 	}
 	
 	@Override

@@ -51,24 +51,27 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D> {
 //	public abstract N defaultConstructor( N input );
 //	public abstract N defaultRootConstructor();
 //	public abstract N defaultNodeConstructor();
+	public abstract <R extends NodeObj<?,?>> void transferNodeDataTo( R input );
 	// DEFAULT CONSTRUCTORS //////////////////////////////////
+	
 	static <E extends NodeObj<E,R> & Iterable<E>,R> void nodeInitRoot( E node ) {
 		node.setCore( node.makeCore() );	// constructor() is root constructor
 		node.nodeList().add( node.getInstance() );	// only added to nodelist in root init, since will always be pos 0
 		node.generateData();
 	}
+	
 	static <E extends NodeObj<E,R> & Iterable<E>,R> void nodeInitParChild( E par, E child ) {
-		child.setCore( par.getCore() );
+//		child.setCore( par.getCore() ); // happens in addChild
 		// need to add child to nodelist(), done per add method
 		child.setIndex( par.totalSize() ); // can be overridden if not added at end of list
 		child.generateData();       // needs to be called again if new index assigned and data depends on index
 	}
 	
-	public default N newNode( N par ) {
-		N out = defaultConstructor();
-		nodeInitParChild( par, out );
-		return out;
-	}
+//	public default N newNode( N par ) {
+//		N out = defaultConstructor();
+//		nodeInitParChild( par, out );
+//		return out;
+//	}
 	
 //	public default N newRoot() {
 //		N out = defaultConstructor();
@@ -87,11 +90,11 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D> {
 	
 	// BASE METHODS ////////////////////////////////////////
 	
-	default void rootInit() {
-		makeCore();	// constructor() is root constructor
-		nodeList().add( getInstance() );	// only added to nodelist in root init, since will always be pos 0
-		generateData();
-	}
+//	default void rootInit() {
+//		makeCore();	// constructor() is root constructor
+//		nodeList().add( getInstance() );	// only added to nodelist in root init, since will always be pos 0
+//		generateData();
+//	}
 	
 //	default void nodeInit( N input ) {
 //		setCore( input.getCore() );
@@ -115,6 +118,19 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D> {
 
 	public default int totalSize() {
 		return nodeList().size();
+	}
+	
+	// SEARCH METHODS /////////////////////////////////////
+	
+	public default N findFirst( Predicate<N> condition ) {
+		for( N node : bfs() ) if( condition.test(node) ) return node;
+		throw new NoSuchElementException("no node found matching search condition" );
+	}
+	
+	public default List<N> findAll( Predicate<N> condition ) {
+		List<N> out = new ArrayList<>();
+		for( N node : bfs() ) if( condition.test(node) ) out.add(node);
+		return out;
 	}
 	
 	
@@ -389,10 +405,36 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D> {
 			// throws UnsupportedOperationException.
 		}
 	}
-//	// CORE DATA FNS /////////////////////////////////
-//	
-	public default void generateData() {
-		setData( getCore().dataGeneratorFn.apply( getInstance() ) );
+	
+	// CONVERTER FNS /////////////////////////////////
+	
+	public default <R extends NodeObj<R,?> & Iterable<R>> void buildWithStructureFrom( R input, 
+			Supplier<D> dataGenerator, BiConsumer<R,N> dataModifier ) {
+		if( nodeList() == null ) NodeObj.nodeInitRoot(getInstance());
+		if( nodeList().size() > 1 ) throw new IllegalStateException( "target build node cannot have children");
+		
+		input.transferNodeDataTo( getInstance() );
+		
+		for( int i = 1; i < input.nodeList().size(); i++ ) {
+			N newNode = defaultConstructor();
+			input.nodeList().get(i).transferNodeDataTo( newNode );
+			if( newNode.getData() == null ) newNode.setData( dataGenerator.get() );	// if empty data, generate
+			nodeList().add(newNode);
+			newNode.setCore(getCore());
+		}
+//		System.out.println("nodelist size: " + nodeList().size() );
+		for( R node : input ) {	// traverse graph
+			dataModifier.accept( node, nodeList().get(node.index()) );
+		}
+	}
+	
+	
+	// CORE DATA FNS /////////////////////////////////
+	
+	public default void generateData() { 
+		// TODO make work from constructor fn without getCore() returning null
+//		if( getCore() != null ) 
+			setData( getCore().dataGeneratorFn.apply( getInstance() ) );
 	}
 	
 	public default void setDataGenerator( Function<N,D> generatorFn ) {
@@ -409,17 +451,19 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D> {
 		for( N node : bfs() ) node.generateData();
 	}
 
-	class CoreData<T extends NodeObj<T,D> & Iterable<T>,D> {
+	class CoreData<N extends NodeObj<N,D> & Iterable<N>,D> {
+		int test = 4;
+		List<N> nodeList;
+		BiFunction<N,Integer,Integer> indexReturnFn;
+//		Function<T,T> nodeGeneratorFn;
+		Function<N,D> dataGeneratorFn = n -> null;
 		
-		List<T> nodeList;
-		BiFunction<T,Integer,Integer> indexReturnFn;
-		Function<T,T> nodeGeneratorFn;
-		Function<T,D> dataGeneratorFn = n -> null;
 		
-		CoreData( BiFunction<T,Integer,Integer> inputFn ){
+		CoreData( BiFunction<N,Integer,Integer> inputFn ){
 			nodeList = new ArrayList<>();
 			this.indexReturnFn = inputFn;
 		}
+		
 		
 //		public void attach( T newNode ) {
 //			nodeList.add(newNode);
@@ -427,14 +471,14 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D> {
 //		}
 		
 		
-		public void setDataGenerator( Function<T,D> generatorFn ) {
+		public void setDataGenerator( Function<N,D> generatorFn ) {
 			this.dataGeneratorFn = generatorFn;
 		}
 				
 		
 	}
 	
-	class NoInput {}	// input for a null node
+	class BaseNodeCommand {}	// input for a null node
 
 }
 

@@ -7,6 +7,9 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -14,10 +17,14 @@ import java.util.stream.IntStream;
 
 import unCore.NodeObj.CoreData;
 
-public abstract class TreeNodeStruct<N extends TreeNodeStruct<N, D>, D> implements NodeObj<N, D>, Iterable<N> {
+public abstract class TreeNodeStruct<N extends TreeNodeStruct<N,D>, D> implements NodeObj<N, D>, Iterable<N>, TreeBuilder<N,D> {
 	//COMMON
-	NodeObj.CoreData<N,D> core;
+	CoreData<N,D> core;
 	D data;
+	/**
+	 * Identifier generator, used to get a unique id for each created tree node
+	 */
+	UUID id = UUID.randomUUID();
 	//OTHER
 	public int index;
 	public int parentIndex = -1; // index in tree.nodes
@@ -27,7 +34,7 @@ public abstract class TreeNodeStruct<N extends TreeNodeStruct<N, D>, D> implemen
 	public int depth = 0;
 
 	// constructors required in subclass
-	public TreeNodeStruct( NoInput...initType ){	// root constructor
+	public TreeNodeStruct( BaseNodeCommand...initType ){	// root constructor
 		if( initType == null || initType.length == 0 ) NodeObj.nodeInitRoot(getInstance());
 //			core = makeCore();	// constructor() is root constructor
 //			nodeList().add( getInstance() );
@@ -63,9 +70,19 @@ public abstract class TreeNodeStruct<N extends TreeNodeStruct<N, D>, D> implemen
 	public int index() {
 		return index;
 	}
+//	public void setIndex( int index ) {
+//		this.index = index;
+//	}
+	/**
+	 * also sets index of child nodes
+	 * if extracting node group from a larger tree, set root index to 0?
+	 * if adding child to another node group, set root to new addchild index
+	 * gaps between nodes in nodelist?
+	 */
 	public void setIndex( int index ) {
 		this.index = index;
 	}
+	
 
 	public int size() {
 		int out = 0;
@@ -97,6 +114,7 @@ public abstract class TreeNodeStruct<N extends TreeNodeStruct<N, D>, D> implemen
 	}
 	public void setCore( CoreData<N,D> input ){
 		this.core = input;
+//		for( N node : this ) node.core = input;
 	}
 	public CoreData<N,D> makeCore() {
 		return new CoreData<>( (n,i) -> n.firstChild + i );
@@ -167,6 +185,26 @@ public abstract class TreeNodeStruct<N extends TreeNodeStruct<N, D>, D> implemen
 			if (node.isLeaf())
 				return true;
 		return false;
+	}
+	
+	/**
+	 * Indicates whether some object equals to this one
+	 *
+	 * @param obj the reference object with which to compare
+	 * @return {@code true} if this object is the same as the obj
+	 *         argument; {@code false} otherwise
+	 */
+	@SuppressWarnings("unchecked")
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null || getClass() != obj.getClass()) {
+			return false;
+		}
+		TreeNodeStruct<N,D> that = (TreeNodeStruct<N,D>) obj;
+		return this.id == that.id;
 	}
 
 	// GET FNS ////////////////////////////////////////////////////////////////
@@ -365,6 +403,16 @@ public abstract class TreeNodeStruct<N extends TreeNodeStruct<N, D>, D> implemen
 //	}
 	
 	/**
+	 * method to extract a child node to its own tree, with it being the new root
+	 * children need to stay, but node indexs need to be updated
+	 * use addChild method?
+	 */
+	public N extract( N nodeIn ) {
+		// TODO make this
+		return nodeIn;
+	}
+	
+	/**
 	 * node adding update
 	 * override the addChild method in subclass for added functionality
 	 * call super.addChild() 
@@ -383,20 +431,57 @@ public abstract class TreeNodeStruct<N extends TreeNodeStruct<N, D>, D> implemen
 	}
 	
 	
+	/**
+	 * this is the heart of the tree class
+	 * need to deal with adding a "child" that is itself a tree with children
+	 */
 	private final void addChildTreeDataFn( N child, D dataIn, int...indexIn ) {
-//		if( child == null ) child = defaultConstructor();	// create null instance, don't want to join
-		if( child == null ) child = newNode( getInstance() );
+		List<N> foundChildren = new ArrayList<>();
+		if( child == null ) child = defaultConstructor(); //newNode( new NoInput() );
+		else if( child.hasChildren() ) foundChildren = child.getChildren();
 		int indexInParent = indexIn.length == 0 || !hasChildren() || indexIn[0] > size ? size : indexIn[0];
 		if (!hasChildren())	firstChild = totalSize();
+		child.size = 0; // if child has children, it's size needs to be reset to 0, so adding back children shows proper size
+		child.firstChild = -1;	// if child has children, first child needs to be reset to -1 for future add ops to work properly
 		child.index = firstChild + indexInParent;
 		child.parentIndex = this.index;
 		child.depth = depth + 1;
 		shiftNodesRight(child.index, child.depth);
 		nodeList().add(child.index, child); // add to index after loc, and after any pre existing children
+		child.setCore(getCore());
 //		child.core = core;
 		if( dataIn == null ) child.generateData();
 		else child.setData( dataIn );
 		size++;
+		if( foundChildren.size() > 0 ) for( N node : foundChildren ) child.addChild( node );
+	}
+	
+	@Override
+	public <R extends NodeObj<?,?>> void transferNodeDataTo( R input ) {
+		if( input instanceof TreeNodeStruct ) {
+			@SuppressWarnings("unchecked")
+			TreeNodeStruct<N,?> tnInput = (TreeNodeStruct<N,?>) input;
+			tnInput.size = size;
+			tnInput.firstChild = firstChild;
+			tnInput.index = index;
+			tnInput.depth = depth;
+			tnInput.parentIndex = parentIndex;
+		}
+	}
+	
+	
+	/**
+	 * updates parentIndex, firstChild, depth
+	 * if a node group is extracted from a larger tree
+	 * if a node tree is added to another tree
+	 * node data needs to be updated to match
+	 * root should be added in standard way
+	 * children should be updated recursively with this fn
+	 * same as addchildtreedatafn? but without creating new nodes?
+	 */
+	
+	private final void updateChildTreeDataFn() {
+		
 	}
 	
 
@@ -517,7 +602,8 @@ public abstract class TreeNodeStruct<N extends TreeNodeStruct<N, D>, D> implemen
 		copyFieldsFromTo( nodeIn,this );
 		for( int i = 1; i < nodeIn.totalSize(); i++ ) {
 //			N newNode = defaultConstructor( 0 );
-			N newNode = newNode(getInstance());
+			N newNode = defaultConstructor();//newNode( getInstance() );
+			newNode.setCore(getCore());
 			copyFieldsFromTo( nodeIn.nodeList().get(i), newNode );
 //			nodeList().add( newNode );
 //			getCore().attach( newNode );
@@ -528,7 +614,8 @@ public abstract class TreeNodeStruct<N extends TreeNodeStruct<N, D>, D> implemen
 	public <E extends TreeNodeStruct<E,?>> N buildWithStructureFromWithLeafFn( E nodeIn, Function<E,N> leafNodeFn ) {
 		copyFieldsFromTo( nodeIn,this );
 		for( int i = 1; i < nodeIn.totalSize(); i++ ) {
-			N newNode = newNode( getInstance() );
+			N newNode = defaultConstructor();//newNode( getInstance() );
+			newNode.setCore(getCore());
 			if( nodeIn.nodeList().get(i).isLeaf() )
 				newNode = leafNodeFn.apply(nodeIn.nodeList().get(i));
 			else
@@ -571,6 +658,9 @@ public abstract class TreeNodeStruct<N extends TreeNodeStruct<N, D>, D> implemen
 					node.parentIndex = get(i).index;
 		}
 	}
+	
+	// INNER CLASSES ////////////////////////////////////////////////////////////////
+
 	
 	
 	
