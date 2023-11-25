@@ -10,6 +10,7 @@ import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -24,7 +25,7 @@ public abstract class TreeNodeStruct<N extends TreeNodeStruct<N,D>, D> implement
 	/**
 	 * Identifier generator, used to get a unique id for each created tree node
 	 */
-	UUID id = UUID.randomUUID();
+	final UUID id = UUID.randomUUID();
 	//OTHER
 	public int index;
 	public int parentIndex = -1; // index in tree.nodes
@@ -35,30 +36,10 @@ public abstract class TreeNodeStruct<N extends TreeNodeStruct<N,D>, D> implement
 
 	// constructors required in subclass
 	public TreeNodeStruct( BaseNodeCommand...initType ){	// root constructor
-		if( initType == null || initType.length == 0 ) NodeObj.nodeInitRoot(getInstance());
-//			core = makeCore();	// constructor() is root constructor
-//			nodeList().add( getInstance() );
-//			generateData();
+		if( initType == null || initType.length == 0 ) NodeObj.nodeInitRoot(getInstance()); // is root, not empty
 	}
 	
-//	public TreeNodeStruct( String input ){	// null constructor
-//	}
-//	
-//	public TreeNodeStruct( N input ){	// null constructor
-//		NodeObj.nodeInitParChild(input, getInstance());
-//	}
-	
-//	public TreeNodeStruct( D input ){	// root constructor
-//		if( nodeList() == null ) core = makeCore();	// constructor() is root constructor
-////		nodeList().add( getInstance() ); ? needed?
-//		setData( input );
-//	}
-//	
-//	public TreeNodeStruct( N input ){	// root constructor
-//		setCore( input.getCore() );
-////		nodeList().add( getInstance() ); not needed?
-//		generateData();
-//	}
+
 	
 	// NodeObj INTERFACE /////////////////////////////////
 	/**
@@ -70,9 +51,7 @@ public abstract class TreeNodeStruct<N extends TreeNodeStruct<N,D>, D> implement
 	public int index() {
 		return index;
 	}
-//	public void setIndex( int index ) {
-//		this.index = index;
-//	}
+
 	/**
 	 * also sets index of child nodes
 	 * if extracting node group from a larger tree, set root index to 0?
@@ -112,9 +91,8 @@ public abstract class TreeNodeStruct<N extends TreeNodeStruct<N,D>, D> implement
 	public CoreData<N,D> getCore(){
 		return core;
 	}
-	public void setCore( CoreData<N,D> input ){
+	public void setCore( CoreData<N,D> input ){	// no recursion, for node operations
 		this.core = input;
-//		for( N node : this ) node.core = input;
 	}
 	public CoreData<N,D> makeCore() {
 		return new CoreData<>( (n,i) -> n.firstChild + i );
@@ -122,8 +100,20 @@ public abstract class TreeNodeStruct<N extends TreeNodeStruct<N,D>, D> implement
 	public D getData() {
 		return data;
 	}
-	public void setData( D data ) {
+	public N setData( D data ) {
 		this.data = data;
+		return getInstance();
+	}
+	@Override
+	public void insertNodeFn( N input ) { 
+		addChild( input );
+	}
+	@Override
+	public N nodeCopy() {	// no coredata involved
+		N out = defaultConstructor();
+		copyFieldsFromTo(getInstance(), out);
+		out.setData(getData());
+		return out;
 	}
 	
 //	@Override
@@ -181,10 +171,17 @@ public abstract class TreeNodeStruct<N extends TreeNodeStruct<N,D>, D> implement
 
 	// returns true if node has leafs as direct children;
 	public boolean containsLeafs() {
+		if(!hasChildren() ) return false;
 		for (N node : getChildren())
-			if (node.isLeaf())
-				return true;
+			if (node.isLeaf()) return true;
 		return false;
+	}
+	
+	public boolean containsOnlyLeafs() {
+		if(!hasChildren() ) return false;
+		for (N node : getChildren())
+			if (!node.isLeaf()) return false;
+		return true;
 	}
 	
 	/**
@@ -205,6 +202,21 @@ public abstract class TreeNodeStruct<N extends TreeNodeStruct<N,D>, D> implement
 		}
 		TreeNodeStruct<N,D> that = (TreeNodeStruct<N,D>) obj;
 		return this.id == that.id;
+	}
+	
+	public boolean checkLeafErrorMSG( String fnName ) {
+		if( !isLeaf() ) {
+			System.out.println(fnName + " can only be called on a leaf node");
+			return false;
+		}
+		return true;
+	}
+	public boolean checkNonLeafErrorMSG( String fnName ) {
+		if( isLeaf() ) {
+			System.out.println(fnName + " can only be called on a non leaf node");
+			return false;
+		}
+		return true;
 	}
 
 	// GET FNS ////////////////////////////////////////////////////////////////
@@ -359,86 +371,89 @@ public abstract class TreeNodeStruct<N extends TreeNodeStruct<N,D>, D> implement
 		else
 			return code;
 	}
-
-	// CHILD OPERATIONS //////////////////////////////////////////////
-
-//	public void addChild( D data, int...index ) {
-//		int newIndex = index.length > 0 ? index[0] : size;
-//		addChild( index );
-//		get(newIndex).setData( data );
-//	}
-//	public void addChild(int... index) {
-//		if (index.length > 0)
-//			addChild(defaultConstructor( 0 ), index[0]);
-//		else
-//			addChild(defaultConstructor( 0 ));
-//	}
-//
-//	void addChild(N child) {
-//		if (!hasChildren())
-//			firstChild = totalSize();
-//		child.index = firstChild + size;
-//		child.parentIndex = this.index;
-//		child.depth = depth + 1;
-//		shiftNodesRight(child.index, child.depth);
-//		nodeList().add(child.index, child); // add to index after loc, and after any pre existing children
-//		child.core = core;
-//		child.generateData();
-//		size++;
-//	}
-//
-//	void addChild(N child, int index) {
-//		if (index > size || !hasChildren()) {
-//			addChild(child);
-//			return;
-//		}
-//		child.index = firstChild + index;
-//		child.parentIndex = this.index;
-//		child.depth = depth + 1;
-//		shiftNodesRight(child.index, child.depth);
-//		nodeList().add(child.index, child); // add to index after loc, and after any pre existing children
-//		child.core = core;
-//		generateData();
-//		size++;
-//	}
 	
 	/**
-	 * method to extract a child node to its own tree, with it being the new root
-	 * children need to stay, but node indexs need to be updated
-	 * use addChild method?
+	 * copies node tree or any subtree
+	 * data copy fn deep copies data associated with node
+	 * uses built in addChild method, corrects fields where needed
 	 */
-	public N extract( N nodeIn ) {
-		// TODO make this
-		return nodeIn;
-	}
+//	public N copy( Function<D,D> dataCopyFn ) {
+//		N out = defaultConstructor();
+//		NodeObj.nodeInitRoot(out);
+//		out.setData( dataCopyFn.apply( getData() ));
+//		out.copyNodeList( getInstance(), dataCopyFn );
+//		return out;
+//	}
+//	
+//	public void copyNodeList( N nodeIn, Function<D,D> dataCopyFn ) {
+//		int myInd = index;
+//		int myPar = parentIndex;
+//		int myFC = nodeList().size();
+//		if( nodeIn.hasChildren() ) {
+//			for( N child : nodeIn.getChildren() ) addChild( dataCopyFn.apply( child.getData() ) );
+//			for( int i = 0; i < getChildCount(); i++ )  get(i).copyNodeList( nodeIn.get(i), dataCopyFn );
+//		}
+//		copyFieldsFromTo( nodeIn, getInstance() );
+//		if( nodeIn.hasChildren() ) firstChild = myFC;
+//		index = myInd;
+//		parentIndex = myPar;
+//		depth = hasParent() ? parent().depth + 1 : 0;
+//	}
+	
+
+
+	// STRUCTURE MODIFICATION OPERATIONS //////////////////////////////////////////////
+
+
+	
 	
 	/**
 	 * node adding update
 	 * override the addChild method in subclass for added functionality
 	 * call super.addChild() 
 	 */
-	public void addChild() {
+	public N addChild() {
 		addChildTreeDataFn( null, null );
+		return lastChild();
 	}
-	public void addChild( int indexIn ) {
+	public N addChild( int indexIn ) {
 		addChildTreeDataFn( null, null, indexIn );
+		return lastChild();
 	}
-	public void addChild( D dataIn, int...indexIn ) {
+	public N addChild( D dataIn, int...indexIn ) {
 		addChildTreeDataFn( null, dataIn, indexIn );
+		return lastChild();
 	}
-	public void addChild( N childIn, int...indexIn ) {
+	
+	public N addChild( List<D> dataIn ) {
+		for( D data : dataIn ) addChildTreeDataFn( null, data  );
+		return lastChild();
+	}
+	public N addChild( N childIn, int...indexIn ) {
 		addChildTreeDataFn( childIn, null, indexIn );
+		return lastChild();
+	}
+	
+	public void addChildren(List<N> children) {
+		for (N child : children)
+			addChild(child);
 	}
 	
 	
 	/**
 	 * this is the heart of the tree class
-	 * need to deal with adding a "child" that is itself a tree with children
+	 * need to deal with adding a "child" that is itself a tree with children, done?
+	 * sets the core, adds new child to nodeList()
+	 * if childnode has chldren, they are pulled out and reconnected through recursive addchild operation
 	 */
 	private final void addChildTreeDataFn( N child, D dataIn, int...indexIn ) {
 		List<N> foundChildren = new ArrayList<>();
 		if( child == null ) child = defaultConstructor(); //newNode( new NoInput() );
-		else if( child.hasChildren() ) foundChildren = child.getChildren();
+		else {
+			if( child.hasChildren() ) foundChildren = child.getChildren();	// need to pull these out and reconnect
+			if( child.getData() != null && dataIn == null ) dataIn = child.getData();
+		}
+		
 		int indexInParent = indexIn.length == 0 || !hasChildren() || indexIn[0] > size ? size : indexIn[0];
 		if (!hasChildren())	firstChild = totalSize();
 		child.size = 0; // if child has children, it's size needs to be reset to 0, so adding back children shows proper size
@@ -485,36 +500,120 @@ public abstract class TreeNodeStruct<N extends TreeNodeStruct<N,D>, D> implement
 	}
 	
 
-//	public void addChild(TreeNode<D> child, int... index) {
-//		int childIndex = index.length == 0 || !hasChildren() || index[0] > size ? size : index[0];
-//		int newIndex = !hasChildren() ? totalSize() : firstChild + childIndex; // myLoc + 1 + size;
-//		if (!hasChildren())
-//			firstChild = newIndex;
-//		child.nodeList = nodeList;
-//		child.index = newIndex;
-//		child.parentIndex = this.index;
-//		child.depth = depth + 1;
-//		child.indexInParent = child.index - firstChild; // calcIndexInParent();
-//		shiftNodesRight(newIndex, child.depth);
-//		nodeList.add(newIndex, child); // add to index after loc, and after any pre existing children
-//		size++;
-//	}
+	/**
+	 * replaces node with nodIn
+	 * children of input node are added to tree
+	 * original node children removed
+	 */
+	public N replaceWithTree( N nodeIn ) {
+		removeChildren();
+		nodeList().set(index, nodeIn);
+		transferNodeDataTo( nodeIn );
+		nodeIn.setCore(getCore() );
+		return nodeIn;
+	}
+	
+	/**
+	 * replaces node with nodeIn
+	 * only swaps node for nodeIn, nodeIn's children ignored
+	 * all children of original node preserved
+	 * nodeIn children are ignored
+	 */
+	public N replaceWithNode( N nodeIn ) {
+		nodeList().set(index, nodeIn);
+		transferNodeDataTo( nodeIn );
+		nodeIn.setCore(getCore() );
+		return nodeIn;
+	}
+	
 
-	public void addChildren(List<N> children) {
-		for (N child : children)
-			addChild(child);
+	
+	public N copy() {
+		N out = defaultConstructor();
+		NodeObj.nodeInitRoot( out );
+		copyNodeTreeRecursiveFromTo( getInstance(), out );
+		
+		return out;
+	}
+	
+	/**
+	 * removes a node from a tree
+	 * creates a tree copy, preserving removed node's children and tree structure
+	 */
+	public N decouple() {
+		N out = defaultConstructor();
+		NodeObj.nodeInitRoot( out );
+		copyNodeTreeRecursiveFromTo( getInstance(), out );
+		remove();
+		return out;
+		
+	}
+	
+	
+	/**
+	 * makes an empty copy of tree structure recursively
+	 * initial new node needs to have its own coredata obj set
+	 * @param oldNode	- node to copy structure from
+	 * @param newNode	- empty added child
+	 */
+	public static <E extends TreeNodeStruct<?,R>,R> void copyNodeTreeRecursiveFromTo( E oldNode, E newNode ) {
+		newNode.setData(oldNode.getData());
+		
+		for( int i = 0; i < oldNode.getChildCount(); i++ ) newNode.addChild();
+		for( int i = 0; i < oldNode.getChildCount(); i++ ) copyNodeTreeRecursiveFromTo( oldNode.get(i), newNode.get(i) );
 	}
 
+	
+	
+	/**
+	 * changes node to a child of a new blank node
+	 * returns new parent
+	 * if doing operation on root node variable, do TreeNode<?> root = root.insertParent()
+	 * 	this will set variable "root" as new parent
+	 * 	if variable was root, it is not longer root after operation
+	 * 	or do root.getRoot().printOperation() etc
+	 */
+	public N insertParent() {
+		N newNode = defaultConstructor();
+		if( isRoot() ) {
+			for( N node : getInstance() ) node.depth++;
+			shiftNodesRight( 0, 0 );
+			newNode.setCore( getCore());
+			newNode.size = 1;
+			newNode.firstChild = 1;
+			nodeList().add(0, newNode );
+			nodeList().get(1).parentIndex = 0;
+			return newNode.nodeList().get(0);
+		}
+		else {
+			N me = copy();
+			replaceWithTree( newNode ).addChild(me);
+			return newNode;
+		}
+	}
+
+	
+
+	/**
+	 * removes a child node
+	 * works recursively to remove any children of child from tree
+	 * @param index
+	 * doesn't return node because all children are removed with operation
+	 */
+	
+	public void remove() {
+		bottomUpOperation( n -> {
+			if( n.hasChildren() ) for( N child : n.getChildren() ) {
+				n.nodeList().remove( child.index() );
+				n.shiftNodesLeft(child.index());
+			}
+			n.size = 0;
+			n.firstChild = -1;
+		});
+		parent().size--;
+	}
 	public void removeChild(int index) {
-		if (get(index).hasChildren()) // recursively clear all contained nodes bottom up
-			for (int i = 0; i < get(index).getChildCount(); i++)
-				get(index).removeChild(i);
-		int childIndex = get(index).index;
-		size--;
-		if (size == 0)
-			firstChild = -1;
-		nodeList().remove(childIndex);
-		shiftNodesLeft(childIndex);
+		get(index).remove();
 	}
 
 	public <E> void removeChild(int index, List<E> treeData) {
@@ -530,7 +629,7 @@ public abstract class TreeNodeStruct<N extends TreeNodeStruct<N,D>, D> implement
 		treeData.remove(childIndex);
 	}
 
-	public void clearChildren() {
+	public void removeChildren() {
 		for (int i = 0; i < getChildCount(); i++)
 			removeChild(i);
 	}
@@ -574,6 +673,9 @@ public abstract class TreeNodeStruct<N extends TreeNodeStruct<N,D>, D> implement
 		return out;
 	}
 
+	public void printOperation() {
+		printOperation( n -> n );
+	}
 	public void printOperation(Function<N, ?> fn) {
 		for (N n : getInstance())
 			System.out.println(createPrintFn(fn).apply(n).toString());
@@ -626,6 +728,60 @@ public abstract class TreeNodeStruct<N extends TreeNodeStruct<N,D>, D> implement
 		return getInstance();
 	}
 	
+	
+	
+	// OPERATIONS /////////////////////////////////////////
+	
+	public void topDownModOperation( Consumer<N> fn ) { // recurses operation to children, then runs fn
+		fn.accept( getInstance() );
+		if( hasChildren() ) for( N child : getChildren() ) child.topDownModOperation(fn); // used for ar calc
+	}
+	
+	public void topDownModOperation( Consumer<N> fn, Predicate<N> checkFn ) { // recurses operation to children, then runs fn
+		if( !checkFn.test(getInstance() ) ) return;
+		fn.accept( getInstance() );
+		if( hasChildren() ) for( N child : getChildren() ) child.topDownModOperation(fn,checkFn); // used for ar calc
+	}
+	
+	public void topDownModOperation( Predicate<N> traverseFn, Predicate<N> runFn, Consumer<N> fn ) { // recurses operation to children, then runs fn
+		if( !traverseFn.test(getInstance() ) ) return;
+		fn.accept( getInstance() );
+		if( hasChildren() ) for( N child : getChildren() ) child.topDownModOperation(traverseFn,runFn,fn); // used for ar calc
+	}
+	public <E> E topDownReturnOperation( Predicate<N> traverseFn, Predicate<N> runFn, Function<N,E> returnFn ) { // recurses operation to children, then runs fn
+		if( runFn.test( getInstance() ) ) return returnFn.apply( getInstance() );
+		if( hasChildren() ) for( N child : getChildren() )
+			if( traverseFn.test( child ) ) return child.topDownReturnOperation(traverseFn,runFn,returnFn); // used for ar calc
+		return null;
+	}
+	public <E> E topDownReturnOperation( Function<N,N> nextNodeFn, Function<N,E> returnFn ) { // recurses operation to children, then runs fn
+		N next = null;
+		try{ next = nextNodeFn.apply( getInstance() ); }
+		catch( Exception E ) {}
+		if( next != null )
+			return next.topDownReturnOperation( nextNodeFn, returnFn ); // used for ar calc
+		else return returnFn.apply( getInstance() );
+	}
+	public void bottomUpOperation( Consumer<N> fn ) { // recurses operation to children, then runs fn
+		if( hasChildren() ) for( N child : getChildren() ) child.bottomUpOperation(fn); // used for ar calc
+		fn.accept( getInstance() );
+	}
+	
+	/**
+	 * excludes start node
+	 * for each child, recursively runs
+	 */
+	
+	public void childOperation( Consumer<N> fn ) {
+		if( hasChildren() ) for( N child : getChildren() ) {
+			fn.accept( child );
+			child.childOperation( fn );
+		}
+	}
+	
+	
+	
+	
 //	// UTILITY FNS ////////////////////////////////////////
 	
 	public <E extends TreeNodeStruct<?,?>> void copyFieldsFromTo( E from, E to ) {
@@ -664,6 +820,7 @@ public abstract class TreeNodeStruct<N extends TreeNodeStruct<N,D>, D> implement
 	
 	
 	
+	
 	// PRINT FNS ////////////////////////////////////////////////////////////////////
 
 	public void printTree() {
@@ -671,12 +828,21 @@ public abstract class TreeNodeStruct<N extends TreeNodeStruct<N,D>, D> implement
 	}
 
 	public String toString() {
-		return "node"; // multiLineString(n -> "node");
+		return "node index: " + index + ", depth: " + depth + ", childCt: " + size + ", fc: " + firstChild +
+				", parentIndex: " + parentIndex + ", data: " + ( getData() != null ? getData().toString() : "null" ); // multiLineString(n -> "node");
 	}
 
 	public <E> void printList(List<E> inputList) {
 		System.out.println(multiLineString(
 				n -> (n.getElem(inputList) != null ? "node: " + n.getElem(inputList) : "node: (null)")));
+	}
+	
+	public void printData() {
+		System.out.println( "index: " + index +
+				            ", parIndex: " + parentIndex +
+				            ", firstChild: " + firstChild +
+				            ", size: " + size + 
+				            ", depth: " + depth );
 	}
 
 }

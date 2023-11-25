@@ -12,7 +12,7 @@ import unCore.*;
 
 
 public class UT_TreeNode extends PApplet {
-	TreeNode<Integer> root;
+	TreeNode<Integer> root,n2;
 //	GraphNode<Integer> graph;
 	
 	public static void main(String... args) {
@@ -29,14 +29,26 @@ public class UT_TreeNode extends PApplet {
 	public void setup() {
 		noLoop();
 		
+		
+		
 		root = new TreeNode<Integer>();
 		root.setDataGenerator( n -> n.index() );
+			root.addChild();
+			root.addChild();
+				root.get(1).addChild();
+					root.get(1).get(0).addChild();
+				root.get(1).addChild();
+			root.addChild();
+			
+			
+//		println( "size = " + root.size() );
+			
+//		n2 = new TreeNode<>();
+//		n2.setData(8);;
 		
-			root.addChild();
-			root.addChild();
-//			root.addChild();
-		root.get(1).addChild();
-		println( root.nodeList().size() );
+		
+//		root.get(1).addChild();
+//		println( root.nodeList().size() );
 		
 //		graph = new GraphNode<>();
 //		graph.addNodes( 3 );
@@ -61,13 +73,28 @@ public class UT_TreeNode extends PApplet {
 	@Override
 	public void draw() {
 
-		println( "treeNode:" );
-		root.printOperation( n -> n.index() + ", data: " + n.getData() );
+		root.printOperation();
 		println();
-		root.reverse();
-		root.printOperation( n -> n.index() + ", data: " + n.getData() );
-		println( "done" );
+//		TreeNode<Integer> r2 = root.get(0).decouple();
+//		root.addChild().addChild( r2 );
+//		root.get(0).insertParent();
 		
+//		root.get(0).insertParent().setData(99);
+		root.getRoot().printOperation();
+		
+		
+		
+		
+////		println( root.get(0).getData() );
+//		for( TreeNode<Integer> node : root.get(1) ) println( node );
+//		TreeNode<Integer> nd = root.get(1).decoupleFromTree();
+//		println();println();
+//		nd.printOperation( n -> n.index() + ", data: " + n.getData() );
+//		for( TreeNode<Integer> node : nd ) println( node );
+//		rootCopy.printOperation( n -> n.index() + ", data: " + n.getData() );
+		
+//		TreeNode<Integer> copy = 
+
 	}
 
 }

@@ -22,7 +22,7 @@ public abstract class GraphNodeStruct<N extends GraphNodeStruct<N, D>, D> implem
 	int index;
 	UUID id = UUID.randomUUID();
 	//OTHER
-	public List<Edge> edges = new ArrayList<>();
+	public List<Edge> edges = new ArrayList<>();	// list of int indexes instead? easier for copying
 	
 	// GRAPH/TREE CONSTRUCTORS
 	public GraphNodeStruct( BaseNodeCommand...initType ){	// root constructor
@@ -78,8 +78,9 @@ public abstract class GraphNodeStruct<N extends GraphNodeStruct<N, D>, D> implem
 		return data;
 	}
 
-	public void setData(D data) {
+	public N setData(D data) {
 		this.data = data;
+		return getInstance();
 	}
 
 
@@ -103,6 +104,16 @@ public abstract class GraphNodeStruct<N extends GraphNodeStruct<N, D>, D> implem
 			List<N> nc = n.getAdjacentNodes();
 			return nc;
 		};
+	}
+	
+	@Override
+	public void insertNodeFn( N input ) { 
+		//TODO add code
+	}
+	@Override
+	public N nodeCopy() {
+		//TODO addCode
+		return getInstance();
 	}
 	
 	
@@ -137,7 +148,7 @@ public abstract class GraphNodeStruct<N extends GraphNodeStruct<N, D>, D> implem
 		// GRAPH METHODS /////////////////////////////////////////////////////
 		
 		public void addNodes(int size ) {
-			for( int i = 0; i < size; i++ ) addNode();
+			for( int i = 0; i < size; i++ ) insertNodeFn(defaultConstructor()); //addNode();
 		}
 		
 		public void addEdgeDirectional( int to) {

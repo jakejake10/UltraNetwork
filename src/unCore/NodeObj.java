@@ -20,14 +20,14 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D> {
 
 
 	
-	default void addNode() {	// basic add, not used where node placed at location
-		N newNode = defaultConstructor();
-		nodeInitParChild( getInstance(), newNode);
-////		newNode.setIndex( totalSize() );
-////		getCore().attach( newNode );
-//		nodeList().add(newNode);
-////		newNode.setCore( getCore() );
-	}
+//	default void addNode() {	// basic add, not used where node placed at location
+//		N newNode = defaultConstructor();
+//		nodeInitParChild( getInstance(), newNode);
+//////		newNode.setIndex( totalSize() );
+//////		getCore().attach( newNode );
+////		nodeList().add(newNode);
+//////		newNode.setCore( getCore() );
+//	}
 
 	// ABSRACT METHODS /////////////////////////////////////
 
@@ -39,15 +39,18 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D> {
 	
 	public abstract Function<N,List<N>> dfsNodeGatherFn();
 	public abstract Function<N,List<N>> bfsNodeGatherFn();
-
+	
 	public abstract CoreData<N,D> makeCore();
 	public abstract void setCore( CoreData<N,D> input );
 	public abstract CoreData<N,D> getCore();
 	
 	public abstract D getData();
-	public abstract void setData( D data );
+	public abstract N setData( D data );
 	
 	public abstract N defaultConstructor();
+	
+	public abstract void insertNodeFn( N input );	// subclass insertNode fn for superclass operations
+	abstract N nodeCopy();
 //	public abstract N defaultConstructor( N input );
 //	public abstract N defaultRootConstructor();
 //	public abstract N defaultNodeConstructor();
@@ -119,6 +122,8 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D> {
 	public default int totalSize() {
 		return nodeList().size();
 	}
+	
+	
 	
 	// SEARCH METHODS /////////////////////////////////////
 	
@@ -452,8 +457,8 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D> {
 	}
 
 	class CoreData<N extends NodeObj<N,D> & Iterable<N>,D> {
-		int test = 4;
 		List<N> nodeList;
+//		List<D> dataList; // add here? for tree skeletons
 		BiFunction<N,Integer,Integer> indexReturnFn;
 //		Function<T,T> nodeGeneratorFn;
 		Function<N,D> dataGeneratorFn = n -> null;
@@ -475,8 +480,19 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D> {
 			this.dataGeneratorFn = generatorFn;
 		}
 				
+		public CoreData<N,D> copy(){
+			CoreData<N,D> out = new CoreData<>( indexReturnFn );
+			out.dataGeneratorFn = dataGeneratorFn;
+			return out;
+		}
 		
+		@Override
+		public String toString() {
+			return "CoreData: size = " + nodeList.size();
+		}
 	}
+	
+	
 	
 	class BaseNodeCommand {}	// input for a null node
 
