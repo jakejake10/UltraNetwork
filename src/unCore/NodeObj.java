@@ -50,7 +50,7 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D> {
 	public abstract N defaultConstructor();
 	
 	public abstract void insertNodeFn( N input );	// subclass insertNode fn for superclass operations
-	abstract N nodeCopy();
+	abstract N copyNode();
 //	public abstract N defaultConstructor( N input );
 //	public abstract N defaultRootConstructor();
 //	public abstract N defaultNodeConstructor();
@@ -230,6 +230,12 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D> {
 		else if (dataList.size() > node.size()) {
 			dataList = dataList.subList(0, node.size());
 		}
+	}
+	
+	// OPERATIONS /////////////////////////////////////////////////////
+	
+	public default void nodeOperation( Consumer<N> fn ) {
+		for( N node : getInstance() ) fn.accept( node );
 	}
 
 	// SORTING FNS /////////////////////////////////////////

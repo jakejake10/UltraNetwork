@@ -111,7 +111,7 @@ public abstract class GraphNodeStruct<N extends GraphNodeStruct<N, D>, D> implem
 		//TODO add code
 	}
 	@Override
-	public N nodeCopy() {
+	public N copyNode() {
 		//TODO addCode
 		return getInstance();
 	}

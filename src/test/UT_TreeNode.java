@@ -31,14 +31,14 @@ public class UT_TreeNode extends PApplet {
 		
 		
 		
-		root = new TreeNode<Integer>();
-		root.setDataGenerator( n -> n.index() );
-			root.addChild();
-			root.addChild();
-				root.get(1).addChild();
-					root.get(1).get(0).addChild();
-				root.get(1).addChild();
-			root.addChild();
+		root = new TreeNode<Integer>().setData(3);
+//		root.setDataGenerator( n -> n.index() );
+			root.addChild().setData(69);
+//			root.addChild();
+//				root.get(1).addChild();
+//					root.get(1).get(0).addChild();
+//				root.get(1).addChild();
+//			root.addChild();
 			
 			
 //		println( "size = " + root.size() );
@@ -73,15 +73,24 @@ public class UT_TreeNode extends PApplet {
 	@Override
 	public void draw() {
 
-		root.printOperation();
+//		root.printOperation();
 		println();
-//		TreeNode<Integer> r2 = root.get(0).decouple();
-//		root.addChild().addChild( r2 );
-//		root.get(0).insertParent();
+
+		for( TreeNode<Integer> node : root.nodeList() ) println( node );
+		println();
 		
-//		root.get(0).insertParent().setData(99);
+		root.get(0).insertParent().setData(99);
+//		root.get(0).insertParent().setData(88);
+//		root.get(0).insertParent().setData(77);
+		
+		for( TreeNode<Integer> node : root.nodeList() ) println( node );
+		println();
 		root.getRoot().printOperation();
+//		println( root );
+//		println( root.parent() );
 		
+//		
+//		println( "size = " + root.getRoot().size());
 		
 		
 		
