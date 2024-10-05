@@ -15,7 +15,8 @@ import processing.core.PVector;
 
 
 
-public abstract class GraphNodeStruct<N extends GraphNodeStruct<N, D>, D> implements NodeObj<N, D>, Iterable<N> {
+public abstract class GraphNodeStruct<N extends GraphNodeStruct<N, D>, D extends Copyable<D>> 
+	implements NodeObj<N, D>, Iterable<N> {
 	// COMMON
 	NodeObj.CoreData<N, D> core;
 	D data;
@@ -110,11 +111,7 @@ public abstract class GraphNodeStruct<N extends GraphNodeStruct<N, D>, D> implem
 	public void insertNodeFn( N input ) { 
 		//TODO add code
 	}
-	@Override
-	public N copyNode() {
-		//TODO addCode
-		return getInstance();
-	}
+	
 	
 	
 	

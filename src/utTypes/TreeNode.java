@@ -48,6 +48,12 @@ public class TreeNode<D> extends TreeNodeStruct<TreeNode<D>, D> implements Itera
 	public Iterator<TreeNode<D>> iterator() {
 		return nodeIterator();
 	}
+	@Override
+	public TreeNode<D> copyNode() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+//	
 	
 	
 	

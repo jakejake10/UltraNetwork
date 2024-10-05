@@ -5,7 +5,7 @@ import java.util.Iterator;
 import unCore.*;
 
 
-public class GraphNode<D> extends GraphNodeStruct<GraphNode<D>, D> implements Iterable<GraphNode<D>>{
+public class GraphNode<D extends Copyable<D>> extends GraphNodeStruct<GraphNode<D>, D> implements Iterable<GraphNode<D>>{
 
 	//NODE CONSTRUCTORS ////////////////////////////////////////////////
 		public GraphNode( BaseNodeCommand...initType ){	// root/null constructor

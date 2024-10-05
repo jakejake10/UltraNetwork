@@ -32,16 +32,20 @@ public class UT_TreeNodeInsertPar extends PApplet {
 		
 		
 		root = new TreeNode<Integer>().setData(0);
-			root.addChild().setData(10);
-				root.get(0).addChild().setData(20);	// bad
-			root.addChild().setData(11);
-				root.get(1).addChild().setData(21);
-			root.addChild().setData(12);
-				root.get(2).addChild().setData(22);
+//			root.addChild().setData(10);
+//				root.get(0).addChild().setData(20);	// bad
+//			root.addChild().setData(11);
+//				root.get(1).addChild().setData(21);
+//			root.addChild().setData(12);
+//				root.get(2).addChild().setData(22);
 			
+		root.insertParent();
+		root.insertParent(  );
 
-
+		
 		root.printOperation();
+//		println("------");
+//		root.getRoot().printOperation();
 //		
 //		root.get(0).addChild();
 		println();
@@ -57,15 +61,15 @@ public class UT_TreeNodeInsertPar extends PApplet {
 		
 		
 				
-		root.insertParent();
-		root.getRoot().insertParent();
-		
-		root.leafOperation( n -> n.insertParent() );
-		root.leafOperation( n -> n.insertParent() );
-		
-		
-				
-		root.getRoot().printOperation();
+//		root.insertParent();
+//		root.getRoot().insertParent();
+//		
+//		root.leafOperation( n -> n.insertParent() );
+//		root.leafOperation( n -> n.insertParent() );
+//		
+//		
+//				
+//		root.getRoot().printOperation();
 //
 //		root.printOperation();
 //		

@@ -33,7 +33,10 @@ public class UT_TreeNode extends PApplet {
 		
 		root = new TreeNode<Integer>().setData(3);
 //		root.setDataGenerator( n -> n.index() );
-			root.addChild().setData(69);
+			root.addChild();
+				root.get(0).addChild();
+			root.addChild();
+				root.get(1).addChild();
 //			root.addChild();
 //				root.get(1).addChild();
 //					root.get(1).get(0).addChild();
@@ -67,25 +70,28 @@ public class UT_TreeNode extends PApplet {
 //		println("graph dfs");
 //		for( GraphNode<Integer> n : graph.dfs() ) println( n.index() );
 //		println();
+			
 ////		println( graph.get(3).index() );
+		root.removeChildren();
+		root.printOperation();
 	}
 
 	@Override
 	public void draw() {
 
 //		root.printOperation();
-		println();
+//		println();
 
-		for( TreeNode<Integer> node : root.nodeList() ) println( node );
-		println();
-		
-		root.get(0).insertParent().setData(99);
-//		root.get(0).insertParent().setData(88);
-//		root.get(0).insertParent().setData(77);
-		
-		for( TreeNode<Integer> node : root.nodeList() ) println( node );
-		println();
-		root.getRoot().printOperation();
+//		for( TreeNode<Integer> node : root.nodeList() ) println( node );
+//		println();
+//		
+//		root.get(0).insertParent().setData(99);
+////		root.get(0).insertParent().setData(88);
+////		root.get(0).insertParent().setData(77);
+//		
+//		for( TreeNode<Integer> node : root.nodeList() ) println( node );
+//		println();
+//		root.getRoot().printOperation();
 //		println( root );
 //		println( root.parent() );
 		

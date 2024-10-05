@@ -9,12 +9,12 @@ import processing.core.PApplet;
 import java.util.ArrayList;
 import java.util.List;
 
-import utTypes.SelectionTree;
+import utTypes.SelectionNode;
 
 
 
 public class UT_SelectionTree extends PApplet {
-	SelectionTree<Integer> st;
+	SelectionNode<Integer> st;
 	
 	public static void main(String... args) {
 		UT_SelectionTree pt = new UT_SelectionTree();
@@ -29,7 +29,7 @@ public class UT_SelectionTree extends PApplet {
 	@Override
 	public void setup() {
 		noLoop();
-		st = new SelectionTree<>();
+		st = new SelectionNode<>();
 		
 		List<Integer> cols1 = new ArrayList<>();
 		for( int i = 0; i < 10; i++ ) cols1.add( color( ( i * ( 1f/ 10f ) ) * 255f ) );
@@ -38,7 +38,7 @@ public class UT_SelectionTree extends PApplet {
 			cols2.add( color(255,0,0) );
 			cols2.add( color(255,0,255) );
 		
-		st.addValues( cols2 );
+//		st.addValues( cols2 );
 //		st.addSelectionNodeGroup( 0.9f, cols1, RectObject.class, r -> UVConstants.easeSigmoid(6f).apply( noise( r.x() * 0.02f, r.y() * 0.02f ) ) )
 //			.addSelectionNodeGroup( 0.001f, cols2 );
 //		

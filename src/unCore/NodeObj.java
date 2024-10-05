@@ -16,7 +16,7 @@ import java.util.stream.*;
 import java.util.Iterator;
 import java.util.LinkedList;
 
-public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D> {
+public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D>{
 
 
 	
@@ -50,7 +50,7 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D> {
 	public abstract N defaultConstructor();
 	
 	public abstract void insertNodeFn( N input );	// subclass insertNode fn for superclass operations
-	abstract N copyNode();
+//	abstract N copyNode();
 //	public abstract N defaultConstructor( N input );
 //	public abstract N defaultRootConstructor();
 //	public abstract N defaultNodeConstructor();
@@ -69,6 +69,9 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D> {
 		child.setIndex( par.totalSize() ); // can be overridden if not added at end of list
 		child.generateData();       // needs to be called again if new index assigned and data depends on index
 	}
+	
+	
+	
 	
 //	public default N newNode( N par ) {
 //		N out = defaultConstructor();
@@ -419,7 +422,11 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D> {
 	
 	// CONVERTER FNS /////////////////////////////////
 	
-	public default <R extends NodeObj<R,?> & Iterable<R>> void buildWithStructureFrom( R input, 
+	/**
+	 * old method to take an existing tree, and a new input node type and build
+	 *  that new node with structure from old tree
+	 */
+	public default <R extends NodeObj<R,?> & Iterable<R>> void convertTypeFrom( R input, 
 			Supplier<D> dataGenerator, BiConsumer<R,N> dataModifier ) {
 		if( nodeList() == null ) NodeObj.nodeInitRoot(getInstance());
 		if( nodeList().size() > 1 ) throw new IllegalStateException( "target build node cannot have children");
@@ -439,6 +446,59 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D> {
 		}
 	}
 	
+	
+
+	/**
+	 * tried an update to method above with new applied ideas
+	 * data treatment would need to be done in convert fn
+	 */
+//	public static <NF extends NodeObj<NF,DF> & Iterable<NF>,DF,NT extends NodeObj<NT,DT> & Iterable<NT>,DT> 
+//	void convertTypeFromTo( NF oldNode, NT nodeOut, BiFunction<NF,NT,NT> convertFn, Supplier<NT> newNodeFn ) {
+//		if( nodeOut.nodeList().size() > 1 ) throw new IllegalStateException( "target build node cannot have children");
+//		
+//		for( int i = 0; i < oldNode.nodeList().size(); i++ ) {
+//			NF origNode = oldNode.nodeList().get(i);
+//			NT curNode = convertFn.apply(origNode, i == 0 ? nodeOut : newNodeFn.get() );
+//			origNode.transferNodeDataTo( i == 0 ? nodeOut : curNode );					// takes care of children, hasdata, size, etc
+//			
+//			if( i == 0 ) continue;									// nodelist automaticailly created / added for root
+//			nodeOut.nodeList().add(curNode);
+//			curNode.setCore(nodeOut.getCore());
+//		}
+//	}
+	
+	/**
+	 * replaces node with nodeIn
+	 * only swaps node for nodeIn, nodeIn's children ignored
+	 * all children of original node preserved
+	 * nodeIn children are ignored
+	 */
+	public default N replaceWithNode( N nodeIn ) {
+		nodeList().set(index(), nodeIn);
+		transferNodeDataTo( nodeIn );
+		nodeIn.setCore(getCore() );
+		return nodeIn;
+	}
+	
+	public static <NF extends NodeObj<NF,DF> & Iterable<NF>,DF,NT extends NodeObj<NT,DT> & Iterable<NT>,DT> 
+	NT convertTypeFromTo( NF oldNode, Function<NF,NT> newNodeFn ) {
+		NT nodeOut = newNodeFn.apply(oldNode);
+		oldNode.transferNodeDataTo( nodeOut );	
+		
+		for( int i = 1; i < oldNode.nodeList().size(); i++ ) {
+			NF origNode = oldNode.nodeList().get(i);
+			NT curNode =  newNodeFn.apply(origNode);
+			origNode.transferNodeDataTo( i == 0 ? origNode : curNode );		// takes care of children, hasdata, size, etc
+			if( i == 0 ) continue;											// nodelist automaticailly created / added for root
+//			nodeOut.nodeList().add(curNode);
+			if( i < nodeOut.nodeList().size() ) nodeOut.nodeList().set(i,curNode);
+			else 					   nodeOut.nodeList().add(curNode);
+			curNode.setCore(nodeOut.getCore());
+		}
+		return nodeOut;
+	}
+	
+		
 	
 	// CORE DATA FNS /////////////////////////////////
 	
@@ -462,7 +522,7 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D> {
 		for( N node : bfs() ) node.generateData();
 	}
 
-	class CoreData<N extends NodeObj<N,D> & Iterable<N>,D> {
+	class CoreData<N extends NodeObj<N,D> & Iterable<N>,D> implements Copyable<CoreData<N,D>> {
 		List<N> nodeList;
 //		List<D> dataList; // add here? for tree skeletons
 		BiFunction<N,Integer,Integer> indexReturnFn;
@@ -500,7 +560,12 @@ public abstract interface NodeObj<N extends NodeObj<N, D> & Iterable<N>, D> {
 	
 	
 	
-	class BaseNodeCommand {}	// input for a null node
+	public class BaseNodeCommand {}	// input for a null node
+	
+	
+	
+	
+	
 
 }
 

@@ -21,10 +21,10 @@ public interface TreeBuilder<N extends TreeNodeStruct<N,D>,D> {
 //	}
 	
 	
-	public default void makeLeafCtBinary( N startNode, int leafCt ) {
+	public static <E extends TreeNodeStruct<E,R>,R> void makeLeafCtBinary( E startNode, int leafCt ) {
 		makeLeafCtBinary( startNode, leafCt, n -> {} );
 	}
-	public default void makeLeafCtBinary( N startNode, int leafCt, Consumer<N> nodeMod ) {
+	public static <E extends TreeNodeStruct<E,R>,R> void makeLeafCtBinary( E startNode, int leafCt, Consumer<E> nodeMod ) {
 		if( leafCt > 1 ) {
 			List<Integer> leafGroups = distributeEven.apply(leafCt, 2);
 			for( Integer i : leafGroups )  startNode.addChild();

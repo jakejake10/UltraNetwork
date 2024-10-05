@@ -5,23 +5,20 @@
 ////import processing.core.PApplet;
 ////import processing.core.PVector;
 //import processing.core.PApplet;
+//import usCore.UltraShape;
 //
 //import java.util.ArrayList;
 //import java.util.List;
 //
-//import pFns_baseObjects.*;
-//import pFns_general.*;
-//import ugCore.*;
-//import usPrimitives.RectObject;
+//
 //import usPrimitives.Rectangular;
 //import utTypes.SelectionNode;
-//import utTypes.SelectionTree;
 //import uvCore.UVConstants;
 //
 //
 //
 //public class UT_SelectionTree2 extends PApplet {
-//	Grid g;
+//	UltraShape g;
 //	SelectionNode<Integer> sn;
 //	
 //	public static void main(String... args) {
@@ -37,15 +34,17 @@
 //	@Override
 //	public void setup() {
 //		noLoop();
-//		g = new Grid( this, 50, 50 );
-//		sn = new SelectionNode<Integer>().initTree();
+//		g = UltraShape.grid( 50, 50 ).position(10,10,480,480);
+//		sn = new SelectionNode<Integer>();
 //		
 //		List<Integer> cols1 = new ArrayList<>();
 //		for( int i = 0; i < 10; i++ ) cols1.add( color( ( i * ( 1f/ 10f ) ) * 255f ) );
 //		List<Integer> cols2 = new ArrayList<>();
-//			cols2.add( PFns.rColor() ); cols2.add( PFns.rColor() );
+//			cols2.add( UVConstants.rColor() ); cols2.add( UVConstants.rColor() );
 //		
-//		sn.addSelectionNodeGroup( 0.9f, cols1, RectObject.class, r -> UVConstants.easeSigmoid(6f).apply( noise( r.x() * 0.02f, r.y() * 0.02f ) ) )
+////		sn.addValues( 0.9f, cols1, RectObject.class, r -> UVConstants.easeSigmoid(6f).apply( noise( r.x() * 0.02f, r.y() * 0.02f ) ) )
+//		sn.addValues( 0.9f, cols1 )
+//
 //			.addSelectionNodeGroup( 0.1f, cols2 );
 //		
 //		
