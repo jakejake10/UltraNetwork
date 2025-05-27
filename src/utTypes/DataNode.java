@@ -1,7 +1,10 @@
 package utTypes;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.function.*;
+import java.util.stream.Collectors;
 
 import unCore.*;
 
@@ -15,6 +18,10 @@ public class DataNode<D> implements TreeNodeObject<DataNode<D>>, Iterable<DataNo
   public int firstChild = -1;
   public int childCt = 0;
   public int depth = 0;
+  
+  public DataNode() {
+	  initNodeFields();
+  }
   
   public DataNode( D data ){
     initNodeFields();
@@ -84,6 +91,10 @@ public class DataNode<D> implements TreeNodeObject<DataNode<D>>, Iterable<DataNo
   public D getData(){
     return data;
   }
+  
+  public List<D> getLeafData(){
+	  return getLeafs().stream().map(n -> n.getData() ).collect(Collectors.toList());
+  }
   public void setData( D input ){
     this.data = input;
   }
@@ -95,7 +106,8 @@ public class DataNode<D> implements TreeNodeObject<DataNode<D>>, Iterable<DataNo
     return getData().equals( dataIn );
   }
   
-  public void addChild( D data ){
+  // cant use addChild, if D = int, will override addChild( index ) method
+  public void addChildWithData( D data ){
     addChild( n -> n.setData( data ) );
   }
   
@@ -105,8 +117,91 @@ public class DataNode<D> implements TreeNodeObject<DataNode<D>>, Iterable<DataNo
     return convertNodeSubtree( n -> new DataNode<>( convertFn.apply( n.getData() ) ) );
   }
   
+  
+  
+  // DATA / GENERATION METHODS ///////////////////////////////////
+  public static <E> DataNode<E> buildFromDataList( TreeNodeObject<?> structure, List<E> dataList ){
+	  if( structure.getTotalSize() != dataList.size() )
+		  throw new UnsupportedOperationException("data list size not equal to node size" );
+	  return structure.convertNodeSubtree( n -> new DataNode<>( dataList.get(n.getIndex() ) ) );
+  }
+  public List<D> exportDataList(){
+		List<D> dataListOut = (List<D>) TreeNodeFunctions.initDataList( getInstance(), null );
+		traverseOperation(dataListOut, (dList,n) -> dList.set(n.getIndex(), n.getData()));
+		return dataListOut;
+	}
+  
+  public void loadData( List<D> data ) {
+	  IntWrapper index = new IntWrapper(0);
+	  buildTree()
+	  	.setLeafCt( data.size() )
+	  	.setChildCt(data.size())
+	  	.setPostGenMod( n -> {
+	  		if( n.isLeaf() ) {
+	  			n.setData( data.get(index.myValue) );
+	  			index.myValue = index.myValue+1;
+	  		}
+	  	} )
+	  	.make();
+  }
+  
+  public void loadData( List<D> data, int maxChildCt ) {
+	  IntWrapper index = new IntWrapper(0);
+	  buildTree()
+	  	.setLeafCt( data.size() )
+	  	.setChildCt(maxChildCt)
+	  	.setPostGenMod( n -> {
+	  		if( n.isLeaf() ) {
+	  			n.setData( data.get(index.myValue) );
+	  			index.myValue = index.myValue+1;
+	  		}
+	  	} )
+	  	.make();
+  }
+  
+  /*
+   * used for modifying integers within the scope of lambda
+   */
+  public class IntWrapper{
+	  int myValue = 0;
+	  public IntWrapper( int input ) {
+		  this.myValue = input;
+	  }
+  }
+
+  
+	public void loadDataOperation(List<D> dataIn, BiFunction<DataNode<D>, List<D>, List<List<D>>> fn) {
+		List<List<D>> dataList = new ArrayList<>(); // list of just root
+		dataList.add(dataIn);
+		loadDataOperationRecursive( dataList, fn );
+  }
+  
+  public void loadDataOperationRecursive( List<List<D>> dataList, BiFunction<DataNode<D>,List<D>,List<List<D>>> fn ) {
+	  dataListOperation( dataList, (n,nodeDList) -> {
+		  
+//		  if( nodeDList == null ) return;
+		  List<List<D>> curList = fn.apply( n, nodeDList);
+		  if( curList.size()> 1 ) {
+			  for( int i = 0; i < curList.size(); i++ ) {
+				  n.addChild();
+				  dataList.add(curList.get(i));	// building datalist with nodelist, should be same index
+			  }
+		  }
+		  else { // fn results in only 1 D element
+			  n.setData( curList.get(0).get(0) );
+		  }
+	  });
+  }
+  
+
+  
+  
   public String toString(){
     return "node: " + ( getData() != null ? getData().toString() : "null" );
   }
   
 }
+
+
+
+

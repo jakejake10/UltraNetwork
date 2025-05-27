@@ -2,6 +2,7 @@ package unCore;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 /*
   - class to contain data shared among all tree nodes
@@ -26,6 +27,10 @@ public class SingularTreeData<N extends TreeNodeObject<?>> {
       String out =  "SingularTreeData: size = \n";
       for( TreeNodeObject<?> n : nodeList ) out+= "  - " + n.nodeString() + "\n";
       return out;
+    }
+    
+    public void printOperation( Function<N,Object> printFn ) {
+    	for( N node : nodeList ) System.out.println( printFn.apply(node) );
     }
     
     

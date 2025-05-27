@@ -13,10 +13,10 @@ import unCore.*;
  * 	- allows you to perform recursive operations with these commmon methods
  * 	- for example, a getValue() method that sums children getValue() returns
  */
-public abstract class SubclassableTreeNodeTemplate implements TreeNodeObject<SubclassableTreeNodeTemplate>, Iterable<SubclassableTreeNodeTemplate> {
+public abstract class TreeFunctionObject<I,O> implements TreeNodeObject<TreeFunctionObject<I,O>>, Iterable<TreeFunctionObject<I,O>> {
 	
 	// TREENODE INTERFACE FIELDS ///////////////////
-	SingularTreeData<SubclassableTreeNodeTemplate> core;
+	SingularTreeData<TreeFunctionObject<I,O>> core;
 	public int index;
 	public int parentIndex = -1; // index in tree.nodes
 	public int firstChild = -1;
@@ -24,19 +24,16 @@ public abstract class SubclassableTreeNodeTemplate implements TreeNodeObject<Sub
 	public int depth = 0;
 
 	// OTHER FIELDS ////////////////////////////////
-	String type = "";
-	String name = "";
+	String description = "no description";
 
 	
-	public SubclassableTreeNodeTemplate( String name, String type ) {
+	public TreeFunctionObject() {
 		initNodeFields();
-		this.name = name;
-		this.type = type;
 	}
 
 	// ABSTRACT METHODS //////////////////////
 
-//	abstract float getValue();
+	abstract O runFn( I input );
 
 	// TREENODE Interface ////////////////////
 	public int getIndex() {
@@ -79,37 +76,36 @@ public abstract class SubclassableTreeNodeTemplate implements TreeNodeObject<Sub
 		this.childCt = count;
 	}
 
-	public SingularTreeData<SubclassableTreeNodeTemplate> getCore() {
+	public SingularTreeData<TreeFunctionObject<I,O>> getCore() {
 		return core;
 	}
 
-	public void setCore(SingularTreeData<SubclassableTreeNodeTemplate> input) {
+	public void setCore(SingularTreeData<TreeFunctionObject<I,O>> input) {
 		this.core = input;
 	}
 
 	// public SubclassableTreeNode defaultConstructor(){
 	// return new SubclassableTreeNode( "", 0 );
 	// }
-	public SubclassableTreeNodeTemplate getInstance() {
+	public TreeFunctionObject<I,O> getInstance() {
 		return this;
 	}
 
-	public Iterator<SubclassableTreeNodeTemplate> iterator() {
+	public Iterator<TreeFunctionObject<I,O>> iterator() {
 		return nodeIterator();
 	}
 
 	// OPTIONAL METHODS //////////////////////////
 
 	@Override
-	public void transferSubclassFieldsTo(SubclassableTreeNodeTemplate newNode) {
+	public void transferSubclassFieldsTo(TreeFunctionObject<I,O> newNode) {
 	}
 
 	// OTHER METHODS ///////////////////////////////////////
-	
+
 	@Override
 	public String toString() {
-		return name + ":";
-	}
-	
+		return description;
+	};
 
 }

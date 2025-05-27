@@ -18,11 +18,12 @@ import java.util.function.Function;
 
 
 
-public class UN_BASIC extends PApplet{
+public class UN_DATANODE extends PApplet{
 	DataNode<String> root;
+	List<Integer> dataList;
 	
 	public static void main(String... args) {
-		UN_BASIC pt = new UN_BASIC();
+		UN_DATANODE pt = new UN_DATANODE();
 		PApplet.runSketch(new String[] { "Test" }, pt);
 	}
 
@@ -39,25 +40,23 @@ public class UN_BASIC extends PApplet{
 				root.get(0).addChildWithData("c00");
 			root.addChildWithData( "c1");
 			root.addChildWithData( "c2");
-				root.get(2).addChildWithData("c20");
-////		root.printOperation();
-//		
-		DataNode<String> root2 = new DataNode<>("root2");
-			root2.addChildWithData("newChd");
-		
-		root2.replaceNodeSubtree(root.get(0));
-//		root.get(1).replaceWith( root2 );
-//		root.get(0).replaceWith(root2);
-//		
+			root.get(2).addChildWithData("c20");
 		root.printOperation();
-//		
-//		println( root.getCore());
-//		root2.get(0).replaceWith( root );
 		println();
-//		root2.printOperation();
-//		root.removeChildren();
-		root.removeChild(0);
-		root.printOperation();
+		
+		dataList = TreeNodeFunctions.convertDataList( root.exportDataList(), s -> s.length() );
+		DataNode<Integer> newRoot = DataNode.buildFromDataList(root, dataList );
+		
+		println();
+		newRoot.printOperation();
+		
+		
+		
+//		TreeNodeFunctions.applyDataList( newRoot, dataList, (n,d) -> n.setData( n.getData() + d ));
+//		newRoot.printOperation();
+//		
+		
+		
 	}
 
 	@Override

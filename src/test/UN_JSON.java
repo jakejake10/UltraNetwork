@@ -18,11 +18,11 @@ import java.util.function.Function;
 
 
 
-public class UN_BASIC extends PApplet{
+public class UN_JSON extends PApplet{
 	DataNode<String> root;
 	
 	public static void main(String... args) {
-		UN_BASIC pt = new UN_BASIC();
+		UN_JSON pt = new UN_JSON();
 		PApplet.runSketch(new String[] { "Test" }, pt);
 	}
 
@@ -39,25 +39,17 @@ public class UN_BASIC extends PApplet{
 				root.get(0).addChildWithData("c00");
 			root.addChildWithData( "c1");
 			root.addChildWithData( "c2");
-				root.get(2).addChildWithData("c20");
-////		root.printOperation();
-//		
-		DataNode<String> root2 = new DataNode<>("root2");
-			root2.addChildWithData("newChd");
+			root.get(2).addChildWithData("c20");
 		
-		root2.replaceNodeSubtree(root.get(0));
-//		root.get(1).replaceWith( root2 );
-//		root.get(0).replaceWith(root2);
-//		
+		root.makeJSON( this )
+			.addField("dataValue", n -> n.getData() )
+			.export( "out.json");
 		root.printOperation();
-//		
-//		println( root.getCore());
-//		root2.get(0).replaceWith( root );
-		println();
-//		root2.printOperation();
-//		root.removeChildren();
-		root.removeChild(0);
-		root.printOperation();
+		
+		DataNode<String> root2 = new DataNode<String>();
+		root2.buildFromJSON("out.json", this, (n,j) -> new DataNode<>(j.getString("dataValue")));
+		
+		root2.printOperation();
 	}
 
 	@Override
