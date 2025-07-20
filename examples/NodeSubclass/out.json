@@ -1,0 +1,81 @@
+{
+  "children": [
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [],
+              "node fields": {
+                "color": -256,
+                "name": "yellow"
+              }
+            },
+            {
+              "children": [],
+              "node fields": {
+                "color": -65536,
+                "name": "red"
+              }
+            }
+          ],
+          "node fields": {"name": "warm1"}
+        },
+        {
+          "children": [
+            {
+              "children": [],
+              "node fields": {
+                "color": -96,
+                "name": "lightyellow"
+              }
+            },
+            {
+              "children": [],
+              "node fields": {
+                "color": -39836,
+                "name": "salmon"
+              }
+            },
+            {
+              "children": [],
+              "node fields": {
+                "color": -8882166,
+                "name": "olive"
+              }
+            }
+          ],
+          "node fields": {"name": "warm2"}
+        }
+      ],
+      "node fields": {"name": "warm"}
+    },
+    {
+      "children": [
+        {
+          "children": [],
+          "node fields": {
+            "color": -16711681,
+            "name": "cyan"
+          }
+        },
+        {
+          "children": [],
+          "node fields": {
+            "color": -16776961,
+            "name": "blue"
+          }
+        },
+        {
+          "children": [],
+          "node fields": {
+            "color": -7601921,
+            "name": "purple"
+          }
+        }
+      ],
+      "node fields": {"name": "cool"}
+    }
+  ],
+  "node fields": {"name": "palettes"}
+}

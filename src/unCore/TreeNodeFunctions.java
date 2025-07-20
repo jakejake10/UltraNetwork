@@ -1,6 +1,7 @@
 package unCore;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,16 +21,16 @@ public final class TreeNodeFunctions {
 	public static <N extends TreeNodeObject<N> & Iterable<N>,E> List<E> initDataList( N node, E value ){
 		return IntStream.range(0, node.getTotalSize()).mapToObj(i -> value ).collect(Collectors.toList() );
 	}
-	
-	public static <N extends TreeNodeObject<N> & Iterable<N>,D> void applyDataList( N node, List<D> dataList, BiConsumer<N,D> fn ) {
-		if( node.getTotalSize() != dataList.size() )
-			  throw new UnsupportedOperationException("data list size not equal to node size" );
-		node.traverseOperation( dataList, (dList,n) -> fn.accept(n,dList.get(n.getIndex())) );
-	}
-	
-	public static <I,O> List<O> convertDataList( List<I> dataList, Function<I,O> convertFn ){
-		return dataList.stream().map(i -> convertFn.apply(i) ).collect(Collectors.toList() );
-	}
+//	
+//	public static <N extends TreeNodeObject<N> & Iterable<N>,D> void applyDataList( N node, List<D> dataList, BiConsumer<N,D> fn ) {
+//		if( node.getTotalSize() != dataList.size() )
+//			  throw new UnsupportedOperationException("data list size not equal to node size" );
+//		node.traverseOperation( dataList, (dList,n) -> fn.accept(n,dList.get(n.getIndex())) );
+//	}
+//	
+//	public static <I,O> List<O> convertDataList( List<I> dataList, Function<I,O> convertFn ){
+//		return dataList.stream().map(i -> convertFn.apply(i) ).collect(Collectors.toList() );
+//	}
 	
 	// NEW METHODS ////////////////////////////////////////////////////////////////////////
 	
@@ -170,6 +171,7 @@ public final class TreeNodeFunctions {
 	
 	// JSON METHODS ///////////////////////////////////////////
 	
+	// Export To JSON /////////////////////////////////////////
 	public static <E extends TreeNodeObject<E> & Iterable<E>> JSONExportBuilder<E> 
 		buildFromJSON( String dir, BiConsumer<JSONObject,E> nodeBuildFn) {
 		// need to add code for this
@@ -180,16 +182,23 @@ public final class TreeNodeFunctions {
 	    N inputNode;
 	    PApplet pa;
 	    Map<String,Function<N,Object>> objectFields = new HashMap<>();
+	    Map<String,Predicate<N>> objectConditions = new HashMap<>();
 	    
 	    public JSONExportBuilder( N inputNode, PApplet pa ){
 	      this.inputNode = inputNode;
 	      this.pa = pa;
 	    }
 	    
-	    public JSONExportBuilder<N> addField( String name, Function<N,Object> fieldFn ){
-	      objectFields.put( name, fieldFn );
-	      return this;
-	    }
+		public JSONExportBuilder<N> addField(String name, Function<N, Object> fieldFn) {
+			objectFields.put(name, fieldFn);
+			return this;
+		}
+
+		public JSONExportBuilder<N> addConditionField(String name, Predicate<N> cond, Function<N, Object> fieldFn) {
+			objectConditions.put(name, cond );
+			objectFields.put(name, fieldFn);
+			return this;
+		}
 	    
 	    public JSONObject exportToJSONObject(){
 	      return exportJSONRecursiveFn( inputNode );
@@ -200,35 +209,328 @@ public final class TreeNodeFunctions {
 	    
 	    // UTILITY FNS ///////////////////////////////////////////
 	    
-	    JSONObject exportJSONRecursiveFn( N node ){
-	      JSONObject parObj = new JSONObject();
-	      parObj.setJSONObject( "node fields", insertFields( node, new JSONObject() ) );
-//	      if( node.hasChildren() ){
-//	        JSONArray childArr = new JSONArray();
-//	        for( int i = 0; i < node.getChildCount(); i++ ){
-//	          childArr.setJSONObject( i, exportJSONRecursiveFn( node.get(i) ) );
-//	        }
-//	        parObj.setJSONArray( "children",childArr );
-//	      }
-	        JSONArray childArr = new JSONArray();
-	        for( int i = 0; i < node.getChildCount(); i++ ){
-	          childArr.setJSONObject( i, exportJSONRecursiveFn( node.get(i) ) );
-	        }
-	        parObj.setJSONArray( "children",childArr );
-	        return parObj;
-	    }
+		JSONObject exportJSONRecursiveFn(N node) {
+			JSONObject parObj = new JSONObject();
+			
+			parObj.setJSONObject("node fields", insertFields(node, new JSONObject()));
+
+//			if( node.hasChildren() ) {
+				JSONArray childArr = new JSONArray();
+				for (int i = 0; i < node.getChildCount(); i++)
+					childArr.setJSONObject(i, exportJSONRecursiveFn(node.get(i)));
+				parObj.setJSONArray("children", childArr);
+//			}
+			
+			return parObj;
+		}
 	    
-	    JSONObject insertFields( N node, JSONObject obj ){
-	      for( String curFieldName : objectFields.keySet() ){
-	        Object curField = objectFields.get( curFieldName ).apply( node );
-	        if( curField instanceof Integer ) obj.setInt( curFieldName, (int) curField );
-	        else if ( curField instanceof Float ) obj.setFloat( curFieldName, (float)curField );
-	        else obj.setString( curFieldName, curField.toString() );
-	      }
-	      return obj;
-	    }
+		JSONObject insertFields(N node, JSONObject obj) {
+			for (String curFieldName : objectFields.keySet()) {
+				if( objectConditions.get(curFieldName) != null
+						&& !objectConditions.get(curFieldName).test(node) ) continue;
+				Object curField = objectFields.get(curFieldName).apply(node);
+				if (curField == null)
+					curField = "null";
+
+				if (curField instanceof Integer)
+					obj.setInt(curFieldName, (int) curField);
+				else if (curField instanceof Float)
+					obj.setFloat(curFieldName, (float) curField);
+				else
+					obj.setString(curFieldName, curField.toString());
+			}
+			return obj;
+		}
 	    
 	  }
+	
+		// IMPORT FROM JSON
+	/*
+	 * only works with format of JSONExport
+	 * each JSON node object contains:
+	 * 	- node object called "node fields"
+	 * 	- node object array called "children"
+	 * 	- leafs will have an empty children array
+	 */
+	public static <E extends TreeNodeObject<E> & Iterable<E>> E buildFromJSON( PApplet pa, String dir, Supplier<E> makeNode ) {
+		JSONObject jObj = pa.loadJSONObject(dir);
+		E out = makeNode.get();
+		out.modifyFromJSON( jObj );
+		buildStructureFromJSONFn( out, jObj, makeNode);
+		return out;
+	}
+	
+	public static <E extends TreeNodeObject<E> & Iterable<E>> E buildFromJSON( PApplet pa, String dir, 
+			Supplier<E> makeNode, BiConsumer<E,JSONObject> modFn  ) {
+		JSONObject jObj = pa.loadJSONObject(dir);
+		E out = makeNode.get();
+//		modFn.accept( out, jObj.getJSONObject("node fields") );
+//		buildFromJSONFn( out, jObj, makeNode );
+		buildStructureFromJSONFn( out, jObj, makeNode ); // make structure so modFn can use isLeaf(), etc.
+//		for( E node : out ) modFn.accept(node, jObj);
+		applyModJSONFn( out, jObj, modFn );
+		return out;
+	}
+	
+//	public static <E extends TreeNodeObject<E> & Iterable<E>> void buildFromJSONFn( E node, 
+//			JSONObject jObj, Supplier<E> makeNode, BiConsumer<E,JSONObject> buildFn ) {
+////		node.modifyFromJSON( jObj.getJSONObject("node fields"));
+//		JSONArray children = jObj.getJSONArray( "children" );
+////		System.out.println(children.size());
+//		if( children == null ) return;
+//		for( int i = 0; i < children.size(); i++ ) {
+//			E newNode = makeNode.get();
+//			buildFn.accept(newNode,children.getJSONObject(i).getJSONObject("node fields") );
+//			node.addChild( newNode );
+//			buildFromJSONFn( node.getLastChild(), children.getJSONObject(i), makeNode, buildFn );
+//		}
+//	}
+	
+	public static <E extends TreeNodeObject<E> & Iterable<E>> void buildStructureFromJSONFn( E node, 
+			JSONObject jObj, Supplier<E> makeNode ) {
+		JSONArray children = jObj.getJSONArray( "children" );
+		if( children == null ) return;
+		for( int i = 0; i < children.size(); i++ ) {
+			node.addChild( makeNode.get() );
+			buildStructureFromJSONFn( node.getLastChild(), children.getJSONObject(i), makeNode );
+		}
+	}
+	
+	public static <E extends TreeNodeObject<E> & Iterable<E>> void applyModJSONFn( E node, 
+			JSONObject jObj, BiConsumer<E,JSONObject> modFn ) {
+		modFn.accept(node, jObj.getJSONObject("node fields"));
+		JSONArray children = jObj.getJSONArray( "children" );
+		if( children == null ) return;
+		for( int i = 0; i < children.size(); i++ )
+			applyModJSONFn( node.get(i), children.getJSONObject(i), modFn );
+	}
+	
+	
+	// PROCESSING CANVAS RENDERING //////////////////////////////////
+	
+	public static <E extends TreeNodeObject<E> & Iterable<E>> TreeRenderBuilder<E> renderTree( E node, PApplet pa ) {
+		return new TreeRenderBuilder<E>( node, pa );
+	}
+	
+	public static class TreeRenderBuilder<E extends TreeNodeObject<E> & Iterable<E>> {
+		PApplet pa;
+		
+		E root;
+		
+		float posX, posY;
+		
+		float defaultNodeHeight = 10;
+		float defaultNodeWidth = 10;
+//		float nodeHeight = 10;
+//		float nodeWidth = 10;
+		float verticalSpacing = 15;
+		float horizontalSpacing = 10;
+		float lineSpacing = 2;
+		float lineWeight = 1;
+
+		float next_leaf_x = 0;
+		float[] nodeWidth,nodeHeight;
+		List<float[]> positions;
+		
+		public TreeRenderBuilder( E root, PApplet pa ){
+			this.root = root;
+			this.pa = pa;
+			nodeWidth = new float[root.getTotalSize()];
+			nodeHeight = new float[root.getMaxDepth()+1];
+			for( int i = 0; i < nodeHeight.length; i++ ) nodeHeight[i] = 0;
+		}
+		
+		public TreeRenderBuilder<E> setNodeDims( float w, float h ) {
+			for( int i = 0; i < nodeWidth.length; i++ ) nodeWidth[i] = w;
+			for( int i = 0; i < nodeHeight.length; i++ ) nodeHeight[i] = h;
+			return this;	
+		}
+		
+		public <M> TreeRenderBuilder<E> setNodeDims( Function<M,float[]> dimFn, List<M> data ) {
+			for( E node : root ) {
+				float[] dims = dimFn.apply(node.getData(data) );
+				nodeWidth[node.getIndex()] = dims[0];
+				if( dims[1] > nodeHeight[node.getDepth()] ) // want only tallest node at depth
+					nodeHeight[node.getDepth()] = dims[1];
+			}
+			return this;
+		}
+		
+		public TreeRenderBuilder<E> setNodeHeight( float ht ) {
+			for( int i = 0; i < nodeHeight.length; i++ ) nodeHeight[i] = ht;
+			return this;
+		}
+		public TreeRenderBuilder<E> setNodeWidth( float wth ) {
+			for( E node : root ) nodeWidth[node.getIndex()] = wth;
+			return this;
+		}
+		
+		public TreeRenderBuilder<E> setNodeWidth( List<String> data ) {
+			for( E node : root ) {
+				nodeWidth[node.getIndex()] = pa.textWidth(node.getData(data));
+			}
+			return this;
+		}
+
+		public TreeRenderBuilder<E> setPosition( float x, float y ) {
+			this.posX = x;
+			this.posY = y;
+			return this;
+		}
+		
+		public TreeRenderBuilder<E> setSpacing( float x, float y ) {
+			this.horizontalSpacing = x;
+			this.verticalSpacing = y;
+			return this;
+		}
+
+		public TreeRenderBuilder<E> make() {
+			getRenderTreePositions(posX,posY);
+			if( nodeWidth[0] == 0 ) setNodeWidth( defaultNodeWidth );
+			if( nodeHeight[0] == 0 ) setNodeHeight( defaultNodeHeight );
+			return this;
+		}
+		
+//		public void renderTree( float x, float y, Function<E,String> strFn ) {
+//			List<String> strs = new ArrayList<>();
+//			for( E n : root ) strs.add( strFn.apply(n));
+//			List<float[]> nodePos = getRenderTreePositions(root, x, y);
+//			if( nodeHeight[0] == 0 ) setNodeHeight( defaultNodeHeight );
+////			renderTreeDefault(root, nodePos);
+//		}
+//		
+//		public <M> void renderTree( float x, float y, Function<M,float[]> dimFn, List<M> data) {
+//			setNodeDims( dimFn, data );
+//			List<float[]> nodePos = getRenderTreePositions(root, x, y);
+////			renderTreeDefault(root, nodePos);
+//		}
+//		
+		// render methods /////////////
+		
+		public TreeRenderBuilder<E> render(){
+			renderLines();
+			renderNodes();
+			return this;
+		}
+		
+		public TreeRenderBuilder<E> renderLines() {
+			pa.rectMode(processing.core.PApplet.CENTER);
+			for (E n : root) {
+				float nx = n.getData(positions)[0];
+				float ny = n.getData(positions)[1];
+
+				if (!n.isLeaf()) {
+					float cy = n.get(0).getData(positions)[1];
+					if (n.getChildCount() == 1)
+						pa.line(nx, ny + nodeHeight[n.getDepth()] / 2 + lineSpacing,
+								nx, cy - nodeHeight[n.getDepth()] / 2 - lineSpacing);
+					else {
+						pa.line(nx, ny + nodeHeight[n.getDepth()] / 2 + lineSpacing, 
+								nx, ny + (cy - ny) / 2);
+						pa.line(n.get(0).getData(positions)[0], ny + (cy - ny) / 2, n.getLastChild().getData(positions)[0],
+								ny + (cy - ny) / 2);
+						for (E nc : n.getChildren())
+							pa.line(nc.getData(positions)[0], ny + (cy - ny) / 2, nc.getData(positions)[0],
+									cy - nodeHeight[n.getDepth()] / 2 - lineSpacing);
+					}
+				}
+			}
+			return this;
+		}
+		
+		public TreeRenderBuilder<E> renderNodes() {
+			for (E n : root) {
+				float nx = n.getData(positions)[0];
+				float ny = n.getData(positions)[1];
+				pa.rect(nx, ny, nodeWidth[n.getIndex()], nodeHeight[n.getDepth()]);
+			}
+			return this;
+		}
+		
+		public TreeRenderBuilder<E> renderNodes( BiConsumer<E,float[]> drawFn ) {
+			for (E n : root) {
+				drawFn.accept( n, new float[] {n.getData(positions)[0], n.getData(positions)[1]} );
+			}
+			return this;
+		}
+		
+		public TreeRenderBuilder<E> renderConnectionLine( E node1, E node2 ) {
+			E start = null;
+			E end = null;
+			if( node1.getDepth() > node2.getDepth() ) {
+				start = node1;
+				end = node2;
+			}
+			else {
+				start = node2;
+				end = node1;
+			}
+			E cur = start;
+			while(true) {
+				float nx = cur.getData(positions)[0];
+				float ny = cur.getData(positions)[1];
+				float px = cur.getParent().getData(positions)[0];
+				float py = cur.getParent().getData(positions)[1];
+				pa.line(nx, ny - nodeHeight[cur.getDepth()] / 2 - lineSpacing, 
+						nx, ny - (ny - py) / 2);
+				pa.line(nx, ny - (ny - py) / 2, px, ny - (ny - py) / 2);
+				pa.line(px, ny - (ny - py) / 2, 
+						px, py + nodeHeight[cur.getDepth()] / 2 + lineSpacing );
+				cur = cur.getParent();
+				if(cur.equals(end)) break;
+				if( cur.isRoot()) break;
+			}
+			return this;
+		}
+
+		
+		public void getRenderTreePositions(float x, float y) {
+			positions = root.initDataList(new float[] {-1, -1});
+			next_leaf_x = 0;
+			
+			setLeafPosition(root);
+			setNonLeafPosition(root);
+
+			float xOff = x - positions.get(0)[0];
+			float yOff = y - positions.get(0)[1];
+
+			for (E n : root) {
+				float[] pos = n.getData(positions);
+				n.setData(new float[] {pos[0] + xOff, pos[1] + yOff}, positions);
+			}
+
+//			return nodePos;
+		}
+
+		void setLeafPosition(E node ) {
+//			System.out.println("xPos: " + next_leaf_x );
+			float xPos = 0;
+			float yPos = 0; //node.getDepth() * (nodeHeight[node.getDepth()] + verticalSpacing);
+			for( int i = 0; i < node.getDepth(); i++ ) yPos += nodeHeight[node.getDepth()] + verticalSpacing;
+			if (node.isLeaf()) {
+				xPos = next_leaf_x;
+//				System.out.println("nodew: " + nodeWidth[node.getIndex()] );
+				next_leaf_x += nodeWidth[node.getIndex()] + horizontalSpacing;
+//				next_leaf_x += nodeWidth[node.getIndex()] / 2 + horizontalSpacing
+//						+ nodeWidth[node.getIndex()] / 2;
+				node.setData(new float[] {xPos+nodeWidth[node.getIndex()]/2, yPos}, positions);
+			} else {
+				node.setData(new float[] {-1, yPos}, positions);
+				for (E nc : node.getChildren())
+					setLeafPosition(nc);
+			}
+		}
+
+		void setNonLeafPosition(E node) {
+			for (E nc : node.getChildren())
+				if (nc.getData(positions)[0] == -1)
+					setNonLeafPosition(nc);
+			float left = node.get(0).getData(positions)[0];
+			float right = node.getLastChild().getData(positions)[0];
+			float value = (left + right) / 2;
+			node.setData(new float[] {value, node.getData(positions)[1]}, positions);
+		}
+	}
 
 	// CALCULATIONS /////////////////////////////////////////////////
 	

@@ -255,12 +255,33 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 			node.getLeafsRecursive(data); // can't use iterable if used in iterable class?
 		return data;
 	}
+	
+//	default int getMaxDepth() {
+//		if (hasChildren())
+//			return getChildren().stream().mapToInt(c -> c.getMaxDepth()).max().orElse(-1);
+//		else
+//			return getDepth();
+//	}
 
+	/*
+	 * gets max depth of a subtree, relative to node calling it
+	 */
 	default int getMaxDepth() {
-		if (hasChildren())
-			return getChildren().stream().mapToInt(c -> c.getMaxDepth()).max().orElse(-1);
-		else
-			return getDepth();
+		return getTotalTreeMaxDepth() - getDepth();
+	}
+	
+	/*
+	 * gets max depth of a tree relative to root node
+	 */
+	default int getTotalTreeMaxDepth() {
+	if (hasChildren())
+		return getChildren().stream().mapToInt(c -> c.getTotalTreeMaxDepth()).max().orElse(-1);
+	else
+		return getDepth();
+}
+	
+	public default List<N> getNodesAtDepth( int depth ) {
+		return findAll( n -> n.getDepth() == depth );
 	}
 
 	public default int getLeafCount() {
@@ -298,23 +319,64 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 		return curNode;
 	}
 
-	public static <E extends TreeNodeObject<E> & Iterable<E>> E getCommonParent(E node1, E node2) {
-		List<Integer> dataList = TreeNodeFunctions.initDataList(node1, 0);
-		E curNode1 = node1;
-		E curNode2 = node2;
-		while (curNode1.hasParent() || curNode2.hasParent()) {
-			if (dataList.get(curNode1.getIndex()) != 0)
-				return curNode1;
-			dataList.set(curNode1.getIndex(), 1);
-			if (dataList.get(curNode2.getIndex()) != 0)
-				return curNode2;
-			dataList.set(curNode2.getIndex(), 2);
-			if (curNode1.hasParent())
-				curNode1 = curNode1.getParent();
-			if (curNode2.hasParent())
-				curNode2 = curNode2.getParent();
+//	public static <E extends TreeNodeObject<E> & Iterable<E>> E getLowestCommonAncestor(E node1, E node2) {
+//		List<Integer> dataList = TreeNodeFunctions.initDataList(node1, 0);
+//		E curNode1 = node1;
+//		E curNode2 = node2;
+//		while (curNode1.hasParent() || curNode2.hasParent()) {
+//			if (dataList.get(curNode1.getIndex()) != 0)
+//				return curNode1;
+//			dataList.set(curNode1.getIndex(), 1);
+//			if (dataList.get(curNode2.getIndex()) != 0)
+//				return curNode2;
+//			dataList.set(curNode2.getIndex(), 2);
+//			if (curNode1.hasParent())
+//				curNode1 = curNode1.getParent();
+//			if (curNode2.hasParent())
+//				curNode2 = curNode2.getParent();
+//		}
+//		return node1.getRoot();
+//	}
+	
+	/*
+	 * gets lowest node that contains two input nodes
+	 */
+			
+	public static <E extends TreeNodeObject<E> & Iterable<E>> E getLowestCommonAncestor(E node1, E node2) {
+		if (!node1.getRoot().equals(node2.getRoot()))
+			throw new UnsupportedOperationException("nodes do not belong to same root");
+		List<E> n1Path = new ArrayList<>();
+		E curNode = node1;
+		while (curNode.hasParent()) {
+			curNode = curNode.getParent();
+			n1Path.add(curNode);
 		}
-		return node1.getRoot();
+		curNode = node2;
+		while (curNode.hasParent()) {
+			curNode = curNode.getParent();
+			for (E dn : n1Path)
+				if (dn.equals(curNode))
+					return curNode;
+		}
+		System.out.println("lca not found");
+		return null;
+	}
+	
+	
+	/*
+	 * gets direct child of an ancestor that contains node calling the method
+	 */
+
+	public default N getAncestorChild(N ancestor) {
+		N curNode = getInstance();
+		while (curNode.hasParent()) {
+			if (curNode.getParent().equals(ancestor))
+				return curNode;
+			else
+				curNode = curNode.getParent();
+		}
+		System.out.println("ancestor child not found");
+		return null;
 	}
 
 	// STRUCTURE MODIFICATION OPERATIONS
@@ -745,14 +807,6 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 	 */
 
 	public default N copyNodeSubtree() {
-//		N out = copyNode(false); // location code not working when copying a subtree rather than root?
-//		traverseOperation(out, (copyRootNode, origCurNode) -> {
-//			if (origCurNode.equals(getInstance()))
-//				return; // dont do anything on initial node
-//			String target = origCurNode.getParent().getLocationCodeFromNode(getInstance());
-//			copyRootNode.getFromLocationCode(target).addChildForce(origCurNode.copyNode(false));
-//		});
-//		return out;
 		N out = copyNode(false);
 		copyNodeSubtreeRecursive( getInstance(), out );
 		return out;
@@ -783,14 +837,21 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 		});
 		return out;
 	}
+	
+	/*
+	 * copies a new node structure from current subtree with no additional data
+	 */
+	public default <E extends TreeNodeObject<E> & Iterable<E>> E copyNodeSubtreeStructure( Supplier<E> newNodeFn ) {
+		return convertNodeSubtree( n -> newNodeFn.get() );
+	}
 
 	// NODE OPERATIONS //////////////////////////////////////////////////////
 
 	/*
 	 * - recursive function for building, copying and converting trees to different
 	 * types - iterates from the node that calls the operation - E = input data
-	 * object, nodeFn<data, current iterated node N > - can buid tree by adding
-	 * children to curent node calling fn, but will not work if adding children
+	 * object, nodeFn<data, current iterated node N > - can build tree by adding
+	 * children to current node calling fn, but will not work if adding children
 	 * earlier in tree
 	 */
 	public default <E> void traverseOperation(E data, BiConsumer<E, N> nodeFn) {
@@ -809,22 +870,7 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 		traverseOperation( null, (e,n) -> fn.accept(n) );
 	}
 	
-	/*
-	 * issue where data needs to be copied? otherwise, when iterating children, data input will change
-	 */
-//	public default <E> void recursiveOperation(List<E> parentData, BiFunction<N,E,E> nodeFn) {
-//		E newData = nodeFn.apply( getInstance(), 
-//				hasParent() ? parentData.get(getIndexInParent()) : parentData.get(0) );
-//		if( hasChildren() ) for( N child : getChildren() )
-//			child.recursiveOperation(newData, nodeFn );
-//	}
 	
-	/*
-	 * not sure hot to implement this, maybe try the tree w/ max child count dedicated solution, go from there
-	 */
-//	public default <E> void recursiveOperation( E data, BiFunction<N,E,Integer> childCt, BiConsumer<N,E> fn ) {
-//		
-//	}
 
 	public default <E> void bottomUpOperation(E data, BiConsumer<E, N> nodeFn) { // recurses operation to children, then
 																					// runs fn
@@ -834,25 +880,15 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 		nodeFn.accept(data, getInstance()); // after applying operation recursively to children, function then accepts
 	}
 	
-	public default <D> void dataListOperation( List<D> dataList, BiConsumer<N,D> fn ) {
-		traverseOperation( dataList, (dList,n) -> {
-			fn.accept(n,dList.get(n.getIndex()));
-		} );
-	}
+	
 	
 	public default void leafOperation( Consumer<N> fn ) {
 		if( hasChildren() ) for( N c : getChildren() ) c.leafOperation( fn );
 		else fn.accept( getInstance() );
 	}
 	
-	// LIST FUNCTIONS ///////////////////////////////////////////
-	
-	public default <E> void dataListLeafOperation( List<E> data, BiConsumer<N,E> fn ) {
-		if( data.size() != getLeafCount() ) throw new UnsupportedOperationException("data list must be equal to leaf count" );
-		List<N> leafs = getLeafs();
-		for( int i = 0; i < leafs.size(); i++ ) fn.accept( leafs.get(i), data.get(i) );
-	}
 
+	
 	// BUILD FNS ///////////////////////////////////////////////
 
 	public default TreeBuilder<N> buildTree() {
@@ -936,34 +972,45 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 		return new JSONExportBuilder<N>(getInstance(), pa );
 	}
 	
-	/*
-	 * only works with format of JSONExport
-	 * each JSON node object contains:
-	 * 	- node object called "node fields"
-	 * 	- node object array called "children"
-	 * 	- leafs will have an empty children array
-	 */
-	public default void buildFromJSON( String dir, PApplet pa ) {
-		JSONObject jObj = pa.loadJSONObject(dir);
-		N out = defaultConstructor();
-		out.modifyFromJSON( jObj );
-		buildFromJSONFn( out, jObj, (n,j) -> n.defaultConstructor() );
+	
+	
+	// DATA LIST FUNCTIONS //////////////////////////////////////////////////////////////
+
+	public default <E> List<E> initDataList(E value) {
+		return IntStream.range(0, getTotalSize()).mapToObj(i -> value).collect(Collectors.toList());
+	}
+
+	public default <D> void applyDataList(N node, List<D> dataList,
+			BiConsumer<N, D> fn) {
+		if (node.getTotalSize() != dataList.size())
+			throw new UnsupportedOperationException("data list size not equal to node size");
+		node.traverseOperation(dataList, (dList, n) -> fn.accept(n, dList.get(n.getIndex())));
+	}
+
+	public static <I, O> List<O> convertDataList(List<I> dataList, Function<I, O> convertFn) {
+		return dataList.stream().map(i -> convertFn.apply(i)).collect(Collectors.toList());
 	}
 	
-	public default void buildFromJSON( String dir, PApplet pa, BiFunction<N,JSONObject,N> buildFn ) {
-		JSONObject jObj = pa.loadJSONObject(dir);
-		N out = buildFn.apply( getInstance(), jObj.getJSONObject("node fields") );
-		buildFromJSONFn( out, jObj, buildFn );
-		this.replaceNodeSubtree(out);
+	public default <D> void dataListOperation( List<D> dataList, BiConsumer<N,D> fn ) {
+		traverseOperation( dataList, (dList,n) -> {
+			fn.accept(n,dList.get(n.getIndex()));
+		} );
 	}
 	
-	default void buildFromJSONFn( N node, JSONObject jObj, BiFunction<N,JSONObject,N> buildFn ) {
-//		node.modifyFromJSON( jObj.getJSONObject("node fields"));
-		JSONArray children = jObj.getJSONArray( "children" );
-		for( int i = 0; i < children.size(); i++ ) {
-			node.addChild( buildFn.apply(node,children.getJSONObject(i).getJSONObject("node fields")));
-			buildFromJSONFn( node.getLastChild(), children.getJSONObject(i), buildFn );
-		}
+	public default <E> void dataListLeafOperation( List<E> data, BiConsumer<N,E> fn ) {
+		if( data.size() != getLeafCount() ) throw new UnsupportedOperationException("data list must be equal to leaf count" );
+		List<N> leafs = getLeafs();
+		for( int i = 0; i < leafs.size(); i++ ) fn.accept( leafs.get(i), data.get(i) );
+	}
+	
+	public default <E> E getData( List<E> dataList ){
+		return dataList.get( getIndex() );
+	}
+	public default <E> E setData( E data, List<E> dataList ){
+		return dataList.set( getIndex(), data );
+	}
+	public default <E> E modifyData( Function<E,E> dataFn, List<E> dataList ){
+		return dataList.set( getIndex(), dataFn.apply(dataList.get(getIndex())) );
 	}
 
 	// PRINT FNS ////////////////////////////////////////////////

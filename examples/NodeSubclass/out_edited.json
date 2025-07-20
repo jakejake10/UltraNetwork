@@ -1,0 +1,28 @@
+{
+  "node fields": {"name": "palettes"},
+  "children": [
+    {
+      "node fields": {"name": "warm"},
+	  "children": [
+        {
+          "node fields": {"name": "warm1"},
+		  "children": [
+            {
+              "node fields": {
+                "color": -256,
+                "name": "yellow"
+              },
+			  "children": []
+            },
+            {
+              "node fields": {
+                "color": -65536,
+                "name": "red"
+              },
+			  "children": []
+            }
+          ]          
+        }
+	  ]  
+	}
+}
