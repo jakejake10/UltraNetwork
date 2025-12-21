@@ -79,7 +79,7 @@ public abstract class SubclassableTreeNodeTemplate implements TreeNodeObject<Sub
 		this.childCt = count;
 	}
 
-	public SingularTreeData<SubclassableTreeNodeTemplate> getCore() {
+	public SingularTreeData<SubclassableTreeNodeTemplate> getCoreFn() {
 		return core;
 	}
 

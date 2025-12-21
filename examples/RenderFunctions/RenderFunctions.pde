@@ -6,18 +6,16 @@ import java.util.List;
 import java.util.stream.*;
 
 Node root;
-PFont font;
 
 
 void setup(){
   size( 1000,500 );
-  frameRate( 20 );
+  frameRate( 2 );
   
-  buildTree1();
-  //buildTree2();
+  buildTree();
 }
 
 void draw(){
-  drawTree1();
-  //drawTree2();
+  drawTree();
+  if( frameCount == 3 ) noLoop();
 }

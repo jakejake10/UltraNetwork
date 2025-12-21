@@ -27,7 +27,7 @@ abstract class MoneyObject implements TreeNodeObject<MoneyObject>, Iterable<Mone
   
   // ABSTRACT METHODS //////////////////////
   
-  abstract float getValue();
+  abstract float getMonthlyDelta();
   
   // TREENODE Interface ////////////////////
   public int getIndex(){
@@ -61,7 +61,7 @@ abstract class MoneyObject implements TreeNodeObject<MoneyObject>, Iterable<Mone
     this.childCt = count;
   }
     
-  public SingularTreeData<MoneyObject> getCore(){
+  public SingularTreeData<MoneyObject> getCoreFn(){
     return core;
   }
   public void setCore( SingularTreeData<MoneyObject> input ){

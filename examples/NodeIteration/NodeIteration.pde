@@ -6,18 +6,14 @@ import java.util.List;
 import java.util.stream.*;
 
 Node root;
-PFont font;
 
 
 void setup(){
   size( 1000,500 );
-  frameRate( 20 );
-  
-  buildTree1();
-  //buildTree2();
+  frameRate( 2 );
+  buildTree3();
 }
 
 void draw(){
-  drawTree1();
-  //drawTree2();
+  drawTree3();
 }

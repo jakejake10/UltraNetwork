@@ -76,7 +76,7 @@ public abstract class TreeFunctionObject<I,O> implements TreeNodeObject<TreeFunc
 		this.childCt = count;
 	}
 
-	public SingularTreeData<TreeFunctionObject<I,O>> getCore() {
+	public SingularTreeData<TreeFunctionObject<I,O>> getCoreFn() {
 		return core;
 	}
 

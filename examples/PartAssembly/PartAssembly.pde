@@ -42,8 +42,8 @@ void setup(){
   
   rectMode(CENTER);
   
-  PFont arial = createFont( "Courier New Bold", 19 );
-  textFont(arial);
+  PFont font = createFont( "Courier New Bold", 19 );
+  textFont(font);
   
   render = TreeNodeFunctions.renderTree( tla, this )
     .setNodeDims(100,75)
@@ -54,7 +54,7 @@ void setup(){
 }
 
 void draw(){
-  background(50);
+  background(17);
   strokeWeight(1.5);
   stroke( 200 );
   render.renderLines()

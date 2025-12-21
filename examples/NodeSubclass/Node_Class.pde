@@ -61,7 +61,7 @@ public class ColorNode implements TreeNodeObject<ColorNode>, Iterable<ColorNode>
     this.childCt = count;
   }
     
-  public SingularTreeData<ColorNode> getCore(){
+  public SingularTreeData<ColorNode> getCoreFn(){
     return core;
   }
   public void setCore( SingularTreeData<ColorNode> input ){

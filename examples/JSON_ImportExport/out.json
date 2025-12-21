@@ -1,0 +1,25 @@
+{
+  "data": {
+    "kind": "INT",
+    "value": 0
+  },
+  "children": [
+    {
+      "data": {
+        "kind": "INT",
+        "value": 1
+      },
+      "children": [],
+      "type": "default"
+    },
+    {
+      "data": {
+        "kind": "INT",
+        "value": 5
+      },
+      "children": [],
+      "type": "default"
+    }
+  ],
+  "type": "default"
+}

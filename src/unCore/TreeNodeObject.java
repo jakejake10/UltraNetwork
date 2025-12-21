@@ -14,7 +14,6 @@ import java.util.stream.*;
 import processing.core.PApplet;
 import processing.data.JSONArray;
 import processing.data.JSONObject;
-import unCore.TreeNodeFunctions.JSONExportBuilder;
 import unCore.TreeNodeFunctions.TreeBuilder;
 
 public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
@@ -53,7 +52,7 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 
 	public N defaultConstructor();
 
-	public SingularTreeData<N> getCore();
+	public SingularTreeData<N> getCoreFn();
 
 	public void setCore(SingularTreeData<N> input);
 
@@ -112,11 +111,25 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 	}
 	
 	
-	
+	/*
+	 * gets the size of entire tree
+	 */
 
 	public default int getTotalSize() {
 
 		return getCore() != null ? getCore().nodeList.size() : 1;
+	}
+	
+	/*
+	 * gets the size of subtree
+	 */
+	
+	public default int getSize() {
+		int size = 1; // count self
+	    for (N child : getChildren()) {
+	      size += child.getSubtreeSize();
+	    }
+	    return size;
 	}
 
 	public default int getSubtreeSize() {
@@ -128,10 +141,17 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 
 	
 
-	public default void initCore() {
+	public default N initCore() {
 		setCore(new SingularTreeData<>());
 		getCore().nodeList.add(getInstance());
+		return getInstance();
 	}
+	
+	public default SingularTreeData<N> getCore(){
+		if( getCoreFn() == null ) initCore();
+		return getCoreFn();
+	}
+	
 
 	// ITERATABLE ////////////////////////////////////////////////////////////////
 
@@ -376,6 +396,19 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 				curNode = curNode.getParent();
 		}
 		System.out.println("ancestor child not found");
+		return null;
+	}
+	
+	public default N getAncestorAtDepth( int depth ) {
+		if( getDepth() < depth ) throw new UnsupportedOperationException("ancestor depth cannot be larger than node depth");
+		N out = getInstance();
+		while(out.hasParent()) {
+			if( out.getDepth() == depth ) return out;
+			else {
+				if( !out.hasParent() ) return null;
+				out = out.getParent();
+			}
+		}
 		return null;
 	}
 
@@ -748,6 +781,31 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 				return getParent().getNextNodeDFSRecursiveFn(false, startDepth);
 		}
 	}
+	
+	public default N getNextNodeBFS(int startDepth) {
+	    N root = getAncestorAtDepth(startDepth);
+	    if (root == null) return null;
+
+	    Queue<N> queue = new LinkedList<>();
+	    queue.add(root);
+
+	    while (!queue.isEmpty()) {
+	        N current = queue.poll();
+
+	        // Check if we’ve found the current node
+	        if (current == this) {
+	            // Return next in queue (i.e. next in BFS order)
+	            return queue.isEmpty() ? null : queue.peek();
+	        }
+
+	        // Enqueue children of the current node
+	        for (int i = 0; i < current.getChildCount(); i++) {
+	            queue.add(current.get(i));
+	        }
+	    }
+
+	    return null; // this node was not found in BFS traversal
+	}
 
 	// STRUCTURAL FNS /////////////////////////////////////////////////////////
 
@@ -966,12 +1024,93 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 	}
 	
 	
+	// UNTESTED
+	public default void reverseChildren() {
+	    if (!hasChildren()) return;
+
+	    // Reverse the contiguous slice containing this node's direct children
+	    List<N> kids = getCore().nodeList.subList(
+	        getFirstChildIndex(),
+	        getFirstChildIndex() + getChildCount()
+	    );
+	    Collections.reverse(kids);
+
+	    // Re-index children to match their new positions
+	    for (int i = 0; i < getChildCount(); i++) {
+	        N child = get(i); // now reflects reversed order
+	        child.setIndex(getFirstChildIndex() + i);
+
+	        // Ensure grandchildren still point at the child's (possibly changed) index
+	        // (Usually already correct if everything is consistent, but this mirrors your other methods.)
+	        for (N gc : child.getChildren()) {
+	            gc.setParentIndex(child.getIndex());
+	        }
+	    }
+	}
+
+	
+	
 
 	// JSON FNS /////////////////////////////////////////////////
-	public default JSONExportBuilder<N> makeJSON( PApplet pa ) {
-		return new JSONExportBuilder<N>(getInstance(), pa );
-	}
 	
+	public default void saveTreeJSON( String filename, PApplet pa ) {
+		   pa.saveJSONObject( toJSON(), filename);
+		}
+	
+	// overload to loadTree(filename, pa) in subclass with the String->N you are trying to create built in
+	public static <E extends TreeNodeObject<E> & Iterable<E>> E loadTreeJSON(String filename, Function<String,E> fn, PApplet pa ) {
+		  JSONObject o = pa.loadJSONObject(filename);
+		  return fromJSON(o,fn);
+		}
+	
+
+	// override in implementing class:
+	default JSONObject dataToJSON(JSONObject json) { return json; }
+
+	default void dataFromJSON(JSONObject data) {}
+	
+	// override if using a polymorphic tree with multiple types
+	default String getJSONType() { return "default"; }
+
+	default JSONObject toJSON() {
+		JSONObject o = new JSONObject();
+		o.setString("type", getJSONType());
+
+		JSONObject data = dataToJSON( new JSONObject() );
+		o.setJSONObject("data", data);
+
+		JSONArray kids = new JSONArray();
+		for (N c : getChildren()) {
+			kids.append(c.toJSON());
+		}
+		o.setJSONArray("children", kids);
+
+		return o;
+	}
+
+	static <E extends TreeNodeObject<E> & Iterable<E>> E fromJSON(JSONObject o, Function<String, E> factoryByType) {
+		// require "type" in node
+		String type = o.getString("type", null);
+		if (type == null) throw new RuntimeException("Missing 'type' string at JSON node root.");
+		
+		JSONObject data = o.getJSONObject("data");
+		if (data == null) data = new JSONObject();
+
+		E n = factoryByType.apply(type);
+		if (n == null) throw new RuntimeException("Factory returned null for type: " + type);
+
+		n.dataFromJSON(data);
+
+		JSONArray kids = o.getJSONArray("children");
+		if (kids != null) {
+			for (int i = 0; i < kids.size(); i++) {
+				n.addChild(TreeNodeObject.fromJSON(kids.getJSONObject(i), factoryByType));
+			}
+		}
+		return n;
+	}
+
+	  
 	
 	
 	// DATA LIST FUNCTIONS //////////////////////////////////////////////////////////////

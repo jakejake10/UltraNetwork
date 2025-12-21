@@ -12,7 +12,7 @@ class Expense extends MoneyObject{
     this.cost = cost;
   }
   
-  float getValue(){
+  float getMonthlyDelta(){
     return cost * -1;
   }
   
@@ -36,7 +36,7 @@ class Expense extends MoneyObject{
   
   @Override
   public String toString(){
-    return super.toString() + getValue();
+    return super.toString() + getMonthlyDelta();
   };
   
   @Override
@@ -55,7 +55,7 @@ class Salary extends MoneyObject{
     this.salary = salary;
   }
   
-  float getValue(){
+  float getMonthlyDelta(){
     return salary / 12;
   }
   public Salary defaultConstructor(){
@@ -77,7 +77,7 @@ class Salary extends MoneyObject{
   
   @Override
   public String toString(){
-    return super.toString() + getValue();
+    return super.toString() + getMonthlyDelta();
   };
   
   @Override
@@ -97,9 +97,9 @@ class AssetGroup extends MoneyObject{
     super( name,"assetGroup" );
   }
   
-  float getValue(){
+  float getMonthlyDelta(){
     float out = 0;
-    if( hasChildren() ) for( MoneyObject c : getChildren() ) out += c.getValue();
+    if( hasChildren() ) for( MoneyObject c : getChildren() ) out += c.getMonthlyDelta();
     return out;
   }
   
@@ -121,7 +121,7 @@ class AssetGroup extends MoneyObject{
   
   @Override
   public String toString(){
-    return super.toString() + ": " + getValue();
+    return super.toString() + ": " + getMonthlyDelta();
   };
   
 }

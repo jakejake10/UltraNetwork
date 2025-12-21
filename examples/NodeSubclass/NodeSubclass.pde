@@ -8,8 +8,9 @@ TreeNodeFunctions.TreeRenderBuilder<ColorNode> render;
 
 
 void setup(){
-  size( 500, 500 );
+  size( 1000, 500 );
   frameRate(4);
+  noLoop();
   
   root = new ColorNode( "palettes" );
     root.addChild( new ColorNode( "warm" ) );
@@ -27,38 +28,36 @@ void setup(){
     
     
     
-  root.makeJSON( this )
-      .addField("name", n -> n.myName )
-      .addConditionField("color", n -> n.isLeaf(), n -> n.myColor )
-      .export( "out.json");
+  //root.makeJSON( this )
+  //    .addField("name", n -> n.myName )
+  //    .addConditionField("color", n -> n.isLeaf(), n -> n.myColor )
+  //    .export( "out.json");
       
-  ColorNode root2 = TreeNodeFunctions.buildFromJSON( this, "import.json", ()-> new ColorNode(), (n,j) -> {
-    n.myName = j.getString("name");
-    if( n.isLeaf() ) n.myColor = j.getInt("color");
-    
-  });
-    //(n,j) -> new ColorNode(j.getString("myName")));
+  //ColorNode root2 = TreeNodeFunctions.buildFromJSON( this, "import.json", ()-> new ColorNode(), (n,j) -> {
+  //  n.myName = j.getString("name");
+  //  if( n.isLeaf() ) n.myColor = j.getInt("color");
+  //});
   
-  println("color palette:" );
-  root.printOperation();
-  println();
-  println("imported color palette:" );
-  root2.printOperation();
+  //println("color palette:" );
+  //root.printOperation();
+  //println();
+  //println("imported color palette:" );
+  //root2.printOperation();
   
   rectMode(CENTER);
   
-  PFont arial = createFont( "Courier New Bold", 14 );
+  PFont arial = createFont( "Courier New Bold", 24 );
   textFont(arial);
   render = TreeNodeFunctions.renderTree( root, this )
-    .setNodeDims(20,20)
-    .setSpacing(20,30)
-    .setPosition(250, 60)
+    .setNodeDims(40,40)
+    .setSpacing(50,60)
+    .setPosition(500, 80)
     .make()
    ;
 }
 
 void draw(){
-  background(50);
+  background(17);
   strokeWeight(1.5);
   stroke( 200 );
   render.renderLines()
@@ -66,7 +65,7 @@ void draw(){
       if( n.isLeaf() ){
         fill( n.myColor );
         noStroke();
-        rect(p[0],p[1]+4,20,20);
+        rect(p[0],p[1]+4,40,40);
       }
       else{
         fill(200);
@@ -75,26 +74,26 @@ void draw(){
       }
     });
     
-    textAlign(LEFT,TOP);
+    //textAlign(LEFT,TOP);
     
-    fill(200);
-    text("random color--------->", 50, 300 );
-    fill( root.getRandomLeaf().myColor );
-    rect( 250, 305, 20, 20 );
+    //fill(200);
+    //text("random color--------->", 50, 300 );
+    //fill( root.getRandomLeaf().myColor );
+    //rect( 250, 305, 20, 20 );
     
-    fill(200);
-    text("random warm color---->", 50, 330 );
-    fill( root.get(0).getRandomLeaf().myColor );
-    rect( 250, 335, 20, 20 );
+    //fill(200);
+    //text("random warm color---->", 50, 330 );
+    //fill( root.get(0).getRandomLeaf().myColor );
+    //rect( 250, 335, 20, 20 );
     
-    fill(200);
-    text("random \"warm2\" color->", 50, 360 );
-    fill( root.get(0).get(1).getRandomLeaf().myColor );
-    rect( 250, 365, 20, 20 );
+    //fill(200);
+    //text("random \"warm2\" color->", 50, 360 );
+    //fill( root.get(0).get(1).getRandomLeaf().myColor );
+    //rect( 250, 365, 20, 20 );
     
-    fill(200);
-    text("random cool color---->", 50, 390 );
-    fill( root.get(1).getRandomLeaf().myColor );
-    rect( 250, 395, 20, 20 );
-    
+    //fill(200);
+    //text("random cool color---->", 50, 390 );
+    //fill( root.get(1).getRandomLeaf().myColor );
+    //rect( 250, 395, 20, 20 );
+    save( "out.jpg");
 }

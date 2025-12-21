@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.function.*;
 import java.util.stream.Collectors;
 
+import processing.data.JSONObject;
 import unCore.*;
 
 
@@ -59,7 +60,7 @@ public class Node implements TreeNodeObject<Node>, Iterable<Node> {
     this.childCt = count;
   }
     
-  public SingularTreeData<Node> getCore(){
+  public SingularTreeData<Node> getCoreFn(){
     return core;
   }
   public void setCore( SingularTreeData<Node> input ){
@@ -86,7 +87,7 @@ public class Node implements TreeNodeObject<Node>, Iterable<Node> {
 //  }
   
   
-  
+ 
   
   
 
