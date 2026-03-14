@@ -8,8 +8,9 @@ import java.util.stream.Collectors;
 
 import processing.data.JSONObject;
 import unCore.*;
+import unProcessingLayer.TreeNodeProcessing.JSONSerializable;
 
-public class DataNode<D> implements TreeNodeObject<DataNode<D>>, Iterable<DataNode<D>> {
+public class DataNode<D> implements TreeNodeObject<DataNode<D>>, Iterable<DataNode<D>>,JSONSerializable {
 	public enum DataKind { NULL, INT, BOOL, STRING, FLOAT }
 	private DataKind kind = DataKind.NULL;
 	SingularTreeData<DataNode<D>> core;
@@ -138,7 +139,7 @@ public class DataNode<D> implements TreeNodeObject<DataNode<D>>, Iterable<DataNo
 
 	public List<D> exportDataList() {
 		List<D> dataListOut = (List<D>) TreeNodeFunctions.initDataList(getInstance(), null);
-		traverseOperation(dataListOut, (dList, n) -> dList.set(n.getIndex(), n.getData()));
+		forEachNode(dataListOut, (dList, n) -> dList.set(n.getIndex(), n.getData()));
 		return dataListOut;
 	}
 
@@ -196,6 +197,17 @@ public class DataNode<D> implements TreeNodeObject<DataNode<D>>, Iterable<DataNo
 	}
 
 	// JSON METHODS ////////////////////////////
+	
+	
+	
+	@Override
+	public String getJSONType() { return "default"; }
+	
+		
+	
+	
+	
+	
 	// Optional: override in typed subclasses if you want, but not required
 	protected DataKind declaredKind() {
 		// If you can’t know D at runtime, declare it explicitly per node instance.
@@ -212,7 +224,6 @@ public class DataNode<D> implements TreeNodeObject<DataNode<D>>, Iterable<DataNo
 		return DataKind.NULL;
 	}
 
-	@Override
 	  public JSONObject dataToJSON( JSONObject json ) {
 
 	    DataKind k = declaredKind();
@@ -244,7 +255,6 @@ public class DataNode<D> implements TreeNodeObject<DataNode<D>>, Iterable<DataNo
 	  }
 
 	  @SuppressWarnings("unchecked")
-	  @Override
 	  public void dataFromJSON(JSONObject o) {
 	    if (o == null) { data = null; return; }
 

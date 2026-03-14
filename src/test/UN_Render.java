@@ -7,6 +7,7 @@ package test;
 import processing.core.*;
 
 import unCore.*;
+import unProcessingLayer.TreeRenderBuilder;
 import utTypes.*;
 //import utTypes.*;
 
@@ -43,7 +44,7 @@ public class UN_Render extends PApplet{
 
 		root.printOperation();
 //		
-		TreeNodeFunctions.renderTree(root, this).setPosition(250,60).make().render();
+		TreeRenderBuilder.renderTree(root, this).setPosition(250,60).make().render();
 	}
 
 	@Override
