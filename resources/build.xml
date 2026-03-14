@@ -150,9 +150,21 @@ ${line}
 	</target>
 	
 	
-	<target name="generate.jar">
-		<jar jarfile="${project.tmp}/${project.name}/${folder}/${project.jar.name}" basedir="${project.bin}"/>
-	</target>
+	<!-- replaced
+		<target name="generate.jar">
+			<jar jarfile="${project.tmp}/${project.name}/${folder}/${project.jar.name}" basedir="${project.bin}"/>
+		</target> -->
+		
+		<target name="generate.jar">
+		    <jar jarfile="${project.tmp}/${project.name}/${folder}/${project.jar.name}">
+		        <fileset dir="${project.bin}">
+		            <exclude name="**/test/**"/>
+		            <exclude name="**/Test/**"/>
+		            <exclude name="**/dev/**"/>
+		            <exclude name="**/Dev/**"/>
+		        </fileset>
+		    </jar>
+		</target>
 	
 	
 	<target name="generate.structure">
@@ -169,10 +181,13 @@ ${line}
 	  			<exclude name="**/*README*"/>
   			</fileset>
 	  	</copy>
-		<!-- added excludes test -->
-  		<copy todir="${project.tmp}/${project.name}/src">
-  			<fileset dir="${project.src}" excludes="**/*test/*.*"/>
-	  	</copy>
+		<!-- replaced -->
+				<copy todir="${project.tmp}/${project.name}/src">
+				    <fileset dir="${project.src}">
+				        <exclude name="**/dev/**"/>
+				        <exclude name="**/test/**"/>
+				    </fileset>
+				</copy>
 		<!--<copy todir="${project.tmp}/${project.name}/src">
 		  			<fileset dir="${project.src}"/>
 			  	</copy>-->

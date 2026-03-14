@@ -385,7 +385,7 @@ public final class TreeNodeFunctions {
 
 		
 		public void getRenderTreePositions(float x, float y) {
-			positions = root.initDataList(new float[] {-1, -1});
+			positions = root.createDataList(new float[] {-1, -1});
 			next_leaf_x = 0;
 			
 			setLeafPosition(root);
@@ -451,6 +451,37 @@ public final class TreeNodeFunctions {
 				makeTree( node.getLastChild(), i, maxChildCt );
 			}
 		}
+	
+	
+	// PREDICATES ///////////////////////////////////////////////
+	
+	public static <N extends TreeNodeObject<N> & Iterable<N>>
+	Predicate<N> withParentInversion(
+	        Predicate<N> basePredicate,
+	        boolean invertOnOddParent,
+	        boolean rootValue
+	) {
+	    return node -> {
+	        if (node == null) return false;
+	        if (node.isRoot()) return rootValue;
+
+	        boolean value = basePredicate.test(node);
+
+	        if (!invertOnOddParent) return value;
+
+	        boolean invert = false;
+	        N cur = node.getParent();
+
+	        while (cur != null && !cur.isRoot()) {
+	            if ( (cur.getIndexInParent() & 1) == 1 )
+	                invert = !invert;
+	            cur = cur.getParent();
+	        }
+
+	        return invert ? !value : value;
+	    };
+	}
+
 
 	
 }

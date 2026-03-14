@@ -1,12 +1,16 @@
 package unCore;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.function.*;
 import java.util.stream.*;
@@ -15,6 +19,11 @@ import processing.core.PApplet;
 import processing.data.JSONArray;
 import processing.data.JSONObject;
 import unCore.TreeNodeFunctions.TreeBuilder;
+
+/*
+ * TODO: contiguous subtree storage
+ * 	- simplifies many operations, faster subtree queries
+ */
 
 public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 	// SUGGESTED FIELDS
@@ -99,45 +108,19 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 	public default String getPrintInfoLineBreak() {
 		return "";
 	}
+//	
+//	/*
+//	 * use method for specifying what data to import from a json file
+//	 * works with the build from json method, so json should follow same conventions
+//	 * for trees of multiple subtypes, each subtype can have different method
+//	 */
+//	
+//	public default void modifyFromJSON( JSONObject input ) {
+//		
+//	}
 	
-	/*
-	 * use method for specifying what data to import from a json file
-	 * works with the build from json method, so json should follow same conventions
-	 * for trees of multiple subtypes, each subtype can have different method
-	 */
 	
-	public default void modifyFromJSON( JSONObject input ) {
-		
-	}
-	
-	
-	/*
-	 * gets the size of entire tree
-	 */
 
-	public default int getTotalSize() {
-
-		return getCore() != null ? getCore().nodeList.size() : 1;
-	}
-	
-	/*
-	 * gets the size of subtree
-	 */
-	
-	public default int getSize() {
-		int size = 1; // count self
-	    for (N child : getChildren()) {
-	      size += child.getSubtreeSize();
-	    }
-	    return size;
-	}
-
-	public default int getSubtreeSize() {
-		int out = 0;
-		for (N node : getInstance())
-			out++;
-		return out;
-	}
 
 	
 
@@ -151,6 +134,7 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 		if( getCoreFn() == null ) initCore();
 		return getCoreFn();
 	}
+	
 	
 
 	// ITERATABLE ////////////////////////////////////////////////////////////////
@@ -197,11 +181,13 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 	public default boolean containsOnlyLeafs() {
 		if (!hasChildren())
 			return false;
-		for (N node : getChildren())
-			if (!node.isLeaf())
+		for (int i = 0; i < getChildCount(); i++)
+			if (!get(i).isLeaf())
 				return false;
 		return true;
 	}
+	
+	
 
 	// GETTERS ////////////////////////////////////////////////////////////////////
 
@@ -210,20 +196,71 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 			throw new UnsupportedOperationException(getInstance() + "cannot get child of a node with 0 children");
 		return getCore().nodeList.get(getFirstChildIndex() + indexIn);
 	}
+	
+	/*
+	 * gets the size of entire tree
+	 */
 
+	public default int getTotalSize() {
+		return getCore() != null ? getCore().nodeList.size() : 1;
+	}
+	
+	/*
+	 * gets the size of subtree
+	 */
+	
+//	public default int getSize() {
+//		int size = 1; // count self
+//	    for (int i = 0; i < getChildCount(); i++) {
+//	      size += get(i).getSubtreeSize();
+//	    }
+//	    return size;
+//	}
+
+//	public default int getSubtreeSize() {
+//		int out = 0;
+//		for (N node : getInstance())
+//			out++;
+//		return out;
+//	}
+	
+	public default int getSubtreeSize() {
+	    int size = 1;
+	    for (int i = 0; i < getChildCount(); i++) {
+	        size += get(i).getSubtreeSize();
+	    }
+	    return size;
+	}
+
+//	public default N findFirst(Predicate<N> matchFn) {
+//		for (N node : getInstance())
+//			if (matchFn.test(node))
+//				return node;
+//		return null;
+//	}
+	
 	public default N findFirst(Predicate<N> matchFn) {
-		for (N node : getInstance())
-			if (matchFn.test(node))
-				return node;
-		return null;
+	    if (matchFn.test(getInstance()))
+	        return getInstance();
+	    for (int i = 0; i < getChildCount(); i++) {
+	        N found = get(i).findFirst(matchFn);
+	        if (found != null)
+	            return found;
+	    }
+	    return null;
 	}
 
 	public default List<N> findAll(Predicate<N> matchFn) {
 		List<N> out = new ArrayList<>();
-		for (N node : getInstance())
-			if (matchFn.test(node))
-				out.add(node);
+		findAllRecursive(matchFn,out);
 		return out;
+	}
+	
+	default void findAllRecursive(Predicate<N> matchFn, List<N> out ){
+		for (int i = 0; i < getChildCount(); i++ ) {
+			if (matchFn.test(get(i))) 
+				out.add(get(i));
+		}
 	}
 
 	public default N getParent() {
@@ -247,27 +284,59 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 		return getCore().nodeList.get(0);
 	}
 
-	public default N getLastChild() {
-		return get(getChildCount() - 1);
-	}
-
 	public default N getRandomNode() {
 		return getCore().nodeList.get((int) Math.floor((Math.random() * getCore().nodeList.size())));
 	}
-
+	
+	/*
+	 * for a performance boost use indexed iteration instead:
+	 * for (int i = 0; i < getChildCount(); i++) {
+		    N child = get(i);
+		    ...
+		}
+	 */
 	public default List<N> getChildren() {
 		return IntStream.range(0, getChildCount()).mapToObj(i -> get(i)).collect(Collectors.toList());
+	}
+	
+	/*
+	 * performance boost over for( N child : getChildren() )
+	 * new list does not need to be created
+	 */
+	public default void forEachChild(Consumer<N> fn) {
+	    for (int i = 0; i < getChildCount(); i++) {
+	        fn.accept(get(i));
+	    }
+	}
+	/*
+	 * performance boost over for( N leaf : getLeafs() )
+	 * new list does not need to be created
+	 * faster than cached leaf list in benchmark test
+	 */
+	public default void forEachLeafRecursive(Consumer<N> fn) {
+	    if (getChildCount() == 0) {
+	        fn.accept(getInstance());
+	        return;
+	    }
+	    for (int i = 0; i < getChildCount(); i++) {
+	        get(i).forEachLeafRecursive(fn);
+	    }
+	}
+	
+	
+	
+//	public default N getLastChild() {
+//		return get(getChildCount() - 1);
+//	}
+	
+	public default N getLastChild() {
+	    return getChildCount() == 0 ? null : get(getChildCount() - 1);
 	}
 
 	public default List<N> getLeafs() {
 		return getLeafsRecursive(new ArrayList<N>());
 	}
 	
-	public default N getRandomLeaf() {
-		List<N> leafs = getLeafs();
-		return leafs.get( (int)Math.floor( Math.random() * leafs.size() ) );
-	}
-
 	default List<N> getLeafsRecursive(List<N> data) {
 		if (!hasChildren())
 			data.add(getInstance());
@@ -275,6 +344,13 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 			node.getLeafsRecursive(data); // can't use iterable if used in iterable class?
 		return data;
 	}
+	
+	public default N getRandomLeaf() {
+		List<N> leafs = getLeafs();
+		return leafs.get( (int)Math.floor( Math.random() * leafs.size() ) );
+	}
+
+	
 	
 //	default int getMaxDepth() {
 //		if (hasChildren())
@@ -294,18 +370,47 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 	 * gets max depth of a tree relative to root node
 	 */
 	default int getTotalTreeMaxDepth() {
-	if (hasChildren())
-		return getChildren().stream().mapToInt(c -> c.getTotalTreeMaxDepth()).max().orElse(-1);
-	else
-		return getDepth();
-}
+
+	    int max = getDepth();
+
+	    for (int i = 0; i < getChildCount(); i++) {
+	        int d = get(i).getTotalTreeMaxDepth();
+	        if (d > max) max = d;
+	    }
+
+	    return max;
+	}
+	
+	
 	
 	public default List<N> getNodesAtDepth( int depth ) {
 		return findAll( n -> n.getDepth() == depth );
 	}
 
+//	public default int getLeafCount() {
+//		return getLeafs().size();
+//	}
+	
 	public default int getLeafCount() {
-		return getLeafs().size();
+	    SingularTreeData<N> core = getCore();
+
+	    // detached / fallback case
+	    if (core == null) {
+	        final int[] count = {0};
+	        forEachLeafRecursive(n -> count[0]++);
+	        return count[0];
+	    }
+
+	    // root gets the fast cached path
+	    if (isRoot()) {
+	        ensureLeafCache();
+	        return core.leafIndexes.size();
+	    }
+
+	    // subtree uses recursive traversal for correctness
+	    final int[] count = {0};
+	    forEachLeafRecursive(n -> count[0]++);
+	    return count[0];
 	}
 
 	/*
@@ -486,6 +591,7 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 		if (foundChildren != null)
 			for (N node : foundChildren)
 				child.addChildForce(node);
+		markLeafCacheDirty();
 	}
 
 // STRUCTURE MODIFICATION UTILITY FNS ///////////////////////////////////////////////////////
@@ -551,6 +657,7 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 		if (getParent().getChildCount() == 0)
 			getParent().setFirstChildIndex(-1);
 		// subClassRemoveChildUpdate();
+		markLeafCacheDirty();
 	}
 
 	public default void removeChild(int index) {
@@ -593,6 +700,7 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 	 */
 	
 	public default N replaceNodeSubtree(N inputNode) {
+		markLeafCacheDirty();
 		N insertedNode = null;
 		if (inputNode.hasChildren()) insertedNode = inputNode.copyNodeSubtree();
 		else                     insertedNode = inputNode.copyNode(true);	// no node field data
@@ -605,6 +713,7 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 		}
 		// root is being replaced
 		else return insertedNode;
+		
 	}
 	
 	/*
@@ -680,40 +789,37 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 
 //   cant use size() in traversal, because size() fn uses traversal
 	public class BFSTraversal<T extends TreeNodeObject<T> & Iterable<T>> implements Iterator<T> {
-		public Queue<T> traversal = new LinkedList<>();
-		boolean[] traversed;
-		// public Function<T,List<T>> nodeGatheringFn;
+	    public Queue<T> traversal = new ArrayDeque<>();
+	    boolean[] traversed;
 
-		public BFSTraversal(T startNode) {
+	    public BFSTraversal(T startNode) {
+	        traversal.add(startNode);
+	        traversed = new boolean[startNode.getTotalSize()];
+	        traversed[startNode.getIndex()] = true;
+	    }
 
-			traversal.add(startNode);
-			// this.nodeGatheringFn = nodeGatheringFn;
-			traversed = new boolean[startNode.getTotalSize()];
-			for (int i = 0; i < traversed.length; i++)
-				traversed[i] = false;
-			traversed[startNode.getIndex()] = true;
-		}
+	    public boolean hasNext() {
+	        return !traversal.isEmpty();
+	    }
 
-		public boolean hasNext() {
-			return !traversal.isEmpty();
-		}
+	    public T next() {
+	        if (!hasNext()) throw new NoSuchElementException();
 
-		public T next() {
-			T n = traversal.poll();
-			Collection<T> foundNodes = n.getChildren();
-			for (T node : foundNodes) {
-				if (!traversed[node.getIndex()]) {
-					traversed[node.getIndex()] = true;
-					traversal.add(node);
-				}
-			}
+	        T n = traversal.remove();
 
-			return n;
-		}
+	        n.forEachChild(nc -> {
+	            if (!traversed[nc.getIndex()]) {
+	                traversed[nc.getIndex()] = true;
+	                traversal.add(nc);
+	            }
+	        });
 
-		public void remove() {
-			// throws UnsupportedOperationException.
-		}
+	        return n;
+	    }
+
+	    public void remove() {
+	        throw new UnsupportedOperationException();
+	    }
 	}
 
 	/**
@@ -806,6 +912,68 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 
 	    return null; // this node was not found in BFS traversal
 	}
+	
+	
+	
+	
+	
+	
+	
+	// CACHING ////////////////////////////////////////////////////////////////
+	
+	public default void ensureLeafCache() {
+	    SingularTreeData<N> core = getCore();
+	    if (core == null) return;
+	    if (core.leafIndexes == null || core.leafCacheDirty) rebuildLeafCache();
+	}
+	
+	public default void markLeafCacheDirty() {
+	    SingularTreeData<N> core = getCore();
+	    if (core != null) core.leafCacheDirty = true;
+	}
+	
+	public default void rebuildLeafCache() {
+	    SingularTreeData<N> core = getCore();
+	    if (core == null) return;
+
+	    if (core.leafIndexes == null) core.leafIndexes = new ArrayList<>();
+	    else core.leafIndexes.clear();
+
+	    for (int i = 0; i < core.nodeList.size(); i++) {
+	        N node = core.nodeList.get(i);
+	        if (node.getChildCount() == 0) {
+	            core.leafIndexes.add(i);
+	        }
+	    }
+
+	    core.leafCacheDirty = false;
+	}
+	
+	/*
+	 * if root, uses cached list
+	 * if not, does regular recursive operation
+	 */
+	public default void forEachLeafCached(Consumer<N> fn) {
+	    SingularTreeData<N> core = getCore();
+
+	    if (core == null) {
+	        forEachLeafRecursive(fn);
+	        return;
+	    }
+
+	    if (isRoot()) {
+	        ensureLeafCache();
+	        for (int i = 0; i < core.leafIndexes.size(); i++) {
+	            fn.accept(core.nodeList.get(core.leafIndexes.get(i)));
+	        }
+	        return;
+	    }
+
+	    // subtree fallback
+	    forEachLeafRecursive(fn);
+	}
+	
+	
 
 	// STRUCTURAL FNS /////////////////////////////////////////////////////////
 
@@ -816,6 +984,7 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 	 */
 
 	public default N insertParent() {
+		markLeafCacheDirty();
 		N newNode = defaultConstructor();
 		newNode.addChild(copyNodeSubtree());
 		if (hasParent())
@@ -865,6 +1034,7 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 	 */
 
 	public default N copyNodeSubtree() {
+		markLeafCacheDirty();
 		N out = copyNode(false);
 		copyNodeSubtreeRecursive( getInstance(), out );
 		return out;
@@ -932,19 +1102,21 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 
 	public default <E> void bottomUpOperation(E data, BiConsumer<E, N> nodeFn) { // recurses operation to children, then
 																					// runs fn
-		if (hasChildren())
-			for (N child : getChildren())
-				child.bottomUpOperation(data, nodeFn); // used for ar calc
+		if (hasChildren()) {
+//			for (N child : getChildren())
+//				child.bottomUpOperation(data, nodeFn); // used for ar calc
+			this.forEachChild(nc -> nc.bottomUpOperation(data, nodeFn) ); // used for ar calc);
+		}
 		nodeFn.accept(data, getInstance()); // after applying operation recursively to children, function then accepts
 	}
 	
 	
-	
-	public default void leafOperation( Consumer<N> fn ) {
-		if( hasChildren() ) for( N c : getChildren() ) c.leafOperation( fn );
-		else fn.accept( getInstance() );
-	}
-	
+	// use forEachLeafRecursive(Consumer<N> fn) instead
+//	public default void leafOperation( Consumer<N> fn ) {
+//		if( hasChildren() ) for( N c : getChildren() ) c.leafOperation( fn );
+//		else fn.accept( getInstance() );
+//	}
+//	
 
 	
 	// BUILD FNS ///////////////////////////////////////////////
@@ -971,6 +1143,7 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 			for (N nChild : get(i).getChildren())
 				nChild.setParentIndex(get(i).getIndex());
 		}
+		markLeafCacheDirty();
 	}
 	
 	public default <E> void shuffleChildren() {
@@ -982,6 +1155,7 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 			for (N nChild : get(i).getChildren())
 				nChild.setParentIndex(get(i).getIndex());
 		}
+		markLeafCacheDirty();
 	}
 
 	public default <E> void sortChildrenReverse(Function<N, E> sortParam) {
@@ -1000,6 +1174,7 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 			for (N nChild : get(i).getChildren())
 				nChild.setParentIndex(get(i).getIndex());
 		}
+		markLeafCacheDirty();
 	}
 
 	public default <E> void sortAll(Function<N, E> sortParam) {
@@ -1007,6 +1182,7 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 			if (n.hasChildren())
 				n.sortChildren(f);
 		});
+		markLeafCacheDirty();
 	}
 
 	public default <E> void sortAllReverse(Function<N, E> sortParam) {
@@ -1014,6 +1190,7 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 			if (n.hasChildren())
 				n.sortChildrenReverse(f);
 		});
+		markLeafCacheDirty();
 	}
 	
 	public default <E> void shuffleAll() {
@@ -1021,6 +1198,7 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 			if (n.hasChildren())
 				n.shuffleChildren();
 		});
+		markLeafCacheDirty();
 	}
 	
 	
@@ -1046,6 +1224,7 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 	            gc.setParentIndex(child.getIndex());
 	        }
 	    }
+	    markLeafCacheDirty();
 	}
 
 	
@@ -1115,8 +1294,14 @@ public interface TreeNodeObject<N extends TreeNodeObject<N> & Iterable<N>> {
 	
 	// DATA LIST FUNCTIONS //////////////////////////////////////////////////////////////
 
-	public default <E> List<E> initDataList(E value) {
+	public default <E> List<E> createDataList(E value) {
 		return IntStream.range(0, getTotalSize()).mapToObj(i -> value).collect(Collectors.toList());
+	}
+	
+	public default <E> List<E> createDataList(Function<N,E> fn ) {
+		List<E> out = this.<E>createDataList((E) null);
+		for( N node : getInstance() ) out.set( node.getIndex(), fn.apply(node));
+		return out;
 	}
 
 	public default <D> void applyDataList(N node, List<D> dataList,

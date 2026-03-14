@@ -17,6 +17,9 @@ import java.util.function.Function;
 public class SingularTreeData<N extends TreeNodeObject<?>> {
     public List<N> nodeList;
     
+    transient ArrayList<Integer> leafIndexes;
+    transient boolean leafCacheDirty = true;
+    
     
     SingularTreeData(){
       nodeList = new ArrayList<>();
