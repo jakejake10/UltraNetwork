@@ -12,23 +12,15 @@ import java.util.function.Consumer;
 public interface TreeNodeTraversal<N extends TreeNodeObject<N> & Iterable<N>> {
 
 	N getInstance();
-
 	N get(int childIndex);
-
-//	int getChildCount();
 	SingularTreeData<N> getCore();
-
-//	int getDepth();
 	boolean hasChildren();
-
 	boolean hasParent();
-
 	N getParent();
-
 	int getIndexInParent();
-
 	boolean isRoot();
-//	int getTotalSize();
+	
+	
 
 	/*
 	 * performance boost over for( N child : getChildren() ) new list does not need
@@ -44,13 +36,13 @@ public interface TreeNodeTraversal<N extends TreeNodeObject<N> & Iterable<N>> {
 	 * performance boost over for( N leaf : getLeafs() ) new list does not need to
 	 * be created faster than cached leaf list in benchmark test
 	 */
-	public default void forEachLeafRecursive(Consumer<N> fn) {
+	public default void forEachLeaf(Consumer<N> fn) {
 		if (getInstance().getChildCount() == 0) {
 			fn.accept(getInstance());
 			return;
 		}
 		for (int i = 0; i < getInstance().getChildCount(); i++) {
-			get(i).forEachLeafRecursive(fn);
+			get(i).forEachLeaf(fn);
 		}
 	}
 
@@ -61,7 +53,7 @@ public interface TreeNodeTraversal<N extends TreeNodeObject<N> & Iterable<N>> {
 		SingularTreeData<N> core = getCore();
 
 		if (core == null) {
-			forEachLeafRecursive(fn);
+			forEachLeaf(fn);
 			return;
 		}
 
@@ -74,7 +66,7 @@ public interface TreeNodeTraversal<N extends TreeNodeObject<N> & Iterable<N>> {
 		}
 
 		// subtree fallback
-		forEachLeafRecursive(fn);
+		forEachLeaf(fn);
 	}
 
 	// ITERATOR //////////////////////////////////////
@@ -230,28 +222,8 @@ public interface TreeNodeTraversal<N extends TreeNodeObject<N> & Iterable<N>> {
 
 	// NODE OPERATIONS //////////////////////////////////////////////////////
 
-	/*
-	 * - recursive function for building, copying and converting trees to different
-	 * types - iterates from the node that calls the operation - E = input data
-	 * object, nodeFn<data, current iterated node N > - can build tree by adding
-	 * children to current node calling fn, but will not work if adding children
-	 * earlier in tree
-	 */
-//		public default <E> void traverseOperation(E data, BiConsumer<E, N> nodeFn) {
-//			traverseOperationFn(data, nodeFn, getInstance().getDepth());
-//		}
-//
-//		default <E> void traverseOperationFn(E data, BiConsumer<E, N> nodeFn, int startDepth) {
-//			nodeFn.accept(data, getInstance());
-//			N nextNode = getNextNodeDFS(startDepth);
-//			if (nextNode == null)
-//				return; // reached last node
-//			nextNode.traverseOperationFn(data, nodeFn, startDepth);
-//		}
-//		
-//		default void nodeOperation( Consumer<N> fn ) {
-//			traverseOperation( null, (e,n) -> fn.accept(n) );
-//		}
+	
+
 
 	// rename the existing one - keeps backward compat for anything using the data
 	// passing pattern
@@ -273,13 +245,6 @@ public interface TreeNodeTraversal<N extends TreeNodeObject<N> & Iterable<N>> {
 		nextNode.forEachNodeFn(data, nodeFn, startDepth);
 	}
 
-//	public default <E> void bottomUpOperation(E data, BiConsumer<E, N> nodeFn) { // recurses operation to children, then
-//																					// runs fn
-//		if (hasChildren()) {
-//			this.forEachChild(nc -> nc.bottomUpOperation(data, nodeFn)); // used for ar calc);
-//		}
-//		nodeFn.accept(data, getInstance()); // after applying operation recursively to children, function then accepts
-//	}
 	
 	// rename, add Consumer overload
 	public default <E> void forEachNodeBottomUp(E data, BiConsumer<E, N> nodeFn) {

@@ -88,7 +88,7 @@ public class UN_CacheTest extends PApplet {
 		int sum = 0;
 		for (int i = 0; i < reps; i++) {
 			final int[] count = { 0 };
-			node.forEachLeafRecursive(n -> count[0]++);
+			node.forEachLeaf(n -> count[0]++);
 			sum += count[0];
 		}
 		long t1 = System.nanoTime();

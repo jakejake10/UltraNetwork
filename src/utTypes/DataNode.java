@@ -187,7 +187,7 @@ public class DataNode<D> implements TreeNodeObject<DataNode<D>>, Iterable<DataNo
 			List<List<D>> curList = fn.apply(n, nodeDList);
 			if (curList.size() > 1) {
 				for (int i = 0; i < curList.size(); i++) {
-					n.addChild();
+					n.addBlankChild();
 					dataList.add(curList.get(i)); // building datalist with nodelist, should be same index
 				}
 			} else { // fn results in only 1 D element

@@ -124,7 +124,7 @@ public final class TreeNodeFunctions {
 				if( i == 0 ) return;
 				N child =  node.defaultConstructor();
 				preGenModFn.accept(child);
-				node.addChild();
+				node.addBlankChild();
 				int[] newData = null;
 				if( lcd[0]> 0) newData = new int[] {i,lcd[1],lcd[2]};
 				else           newData = new int[] {lcd[0],i,lcd[2]};
@@ -184,9 +184,9 @@ public final class TreeNodeFunctions {
 		int[] leafCts = partitionNumber( leafCt, maxChildCt );
 		for( int i : leafCts )
 			if( i == 0 ) return;
-			else if( i == 1 ) node.addChild( 0 );
+			else if( i == 1 ) node.addBlankChild( 0 );
 			else {
-				node.addChild();
+				node.addBlankChild();
 				makeTree( node.getLastChild(), i, maxChildCt );
 			}
 		}

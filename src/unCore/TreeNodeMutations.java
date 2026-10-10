@@ -1,5 +1,6 @@
 package unCore;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -11,65 +12,37 @@ public interface TreeNodeMutations<N extends TreeNodeObject<N> & Iterable<N>> {
 
 	N getInstance();
 
-//	N get(int childIndex);
-//	int getChildCount();
-//	N defaultConstructor();
-//	boolean hasChildren();
-//	List<N> getChildren();
-//	int getFirstChildIndex();
-//	N getLastChild();
-//	int getIndex();
-//	int getDepth();
-//	int getParentIndex();
-//	int getIndexInParent();
-//	N getParent();
-//	boolean hasParent();
-//	boolean isRoot();
-//	SingularTreeData<N> getCore();
-//	boolean allowChildren();
-//	void addedChildMod();
-//	void setIndex();
-//	void setParentIndex( int index );
-//	void setFirstChildIndex( int index);
-//	void setDepth( int depth );
-//	void setChildCount( int size );
-//	void setCore(SingularTreeData<N> core );
-//	N initCore();
-//	void shiftFocus(N input);
-
-//	void transferNodeFieldsTo(N node);
-
-//	<T> void bottomUpOperation(T data, BiConsumer<T, N> nodeFn);
-//	<T> void traverseOperation(T data, BiConsumer<T, N> nodeFn);
-//	N copyNodeSubtree();
-//	<T> void forEachNode(T data, BiConsumer<T, N> nodeFn);
-//
-//	void forEachNode(Consumer<N> fn);
-//
-//	<T> void forEachNodeBottomUp(T data, BiConsumer<T, N> nodeFn);
-//
-//	void forEachNodeBottomUp(Consumer<N> nodeFn);
 
 	/**
 	 * node adding update override the addChild method in subclass for added
 	 * functionality call super.addChild()
 	 */
-	public default void addChild(int... indexIn) {
-		addChildTreeDataFn(getInstance().defaultConstructor(), indexIn.length > 0 ? indexIn[0] : -1);
+
+	// instead of addChild() or addChild(int indexIn)
+	public default void addBlankChild() {
+	    addChildCore(getInstance().defaultConstructor(), -1);
+	}
+
+	public default void addBlankChild(int indexIn) {
+	    addChildCore(getInstance().defaultConstructor(), indexIn);
 	}
 
 	public default void addChild(N childIn, int... indexIn) {
-		addChildTreeDataFn(childIn, indexIn.length > 0 ? indexIn[0] : -1);
+		addChildCore(childIn, indexIn.length > 0 ? indexIn[0] : -1);
 	}
 
 	public default void addChildForce(N childIn, int... indexIn) {
-		addChildTreeDataFn(childIn, indexIn.length > 0 ? indexIn[0] : -1, true);
+		addChildCore(childIn, indexIn.length > 0 ? indexIn[0] : -1, true);
 	}
 
 	public default void addChild(Consumer<N> childModFn, int... indexIn) {
-		addChildTreeDataFn(getInstance().defaultConstructor(), indexIn.length > 0 ? indexIn[0] : -1);
-		N addedChild = indexIn.length == 0 ? getInstance().getLastChild() : getInstance().get(indexIn[0]);
-		childModFn.accept(addedChild);
+	    int pos = indexIn.length > 0 ? indexIn[0] : -1;
+	    addChildCore(getInstance().defaultConstructor(), pos);
+	    // resolve actual insertion position to retrieve the correct child
+	    int actualPos = (pos < 0 || pos >= getInstance().getChildCount() - 1)
+	        ? getInstance().getChildCount() - 1
+	        : pos;
+	    childModFn.accept(getInstance().get(actualPos));
 	}
 
 	public default void addChildren(List<N> childData) {
@@ -78,55 +51,91 @@ public interface TreeNodeMutations<N extends TreeNodeObject<N> & Iterable<N>> {
 	}
 
 	/*
-	 * use case for this?
+	 * Adds multiple children, applying a modifier function to each
+	 * using corresponding data from the provided list.
 	 */
 	public default <E> void addChildren(List<E> childData, BiConsumer<N, E> childModFn) {
-		for (E data : childData)
-			addChild(n -> childModFn.accept(n, data));
+	    for (E data : childData)
+	        addChild(n -> childModFn.accept(n, data));
 	}
 
-	/**
-	 * core of the addChild() method first checks getCore(), instead of init each
-	 * new root, just check once first child needs to be added need to deal with
-	 * adding a "child" that is itself a tree with children, done? sets the core,
-	 * adds new child to nodeList() if childnode has chldren, they are pulled out
-	 * and reconnected through recursive addchild operation
+	/*
+	 * Core insertion logic for all addChild variants.
+	 * Handles core initialization, insertion position resolution,
+	 * index shifting, and reconnection of any pre-existing children
+	 * on the incoming node.
 	 */
-
-	default void addChildTreeDataFn(N child, int indexIn, boolean... forceAdd) {
-		if ((!getInstance().allowChildren() && forceAdd.length == 0)
-				|| (!getInstance().allowChildren() && !forceAdd[0]))
-			throw new UnsupportedOperationException("this class does not allow child nodes to be added");
-		if (getInstance().getCore() == null)
-			getInstance().initCore();
-		List<N> foundChildren = null;
-		if (child.hasChildren())
-			foundChildren = child.getChildren(); // need to pull these out and reconnect
-
-		int curIndexInParent = indexIn < 0 || !getInstance().hasChildren() || indexIn > getInstance().getChildCount()
-				? getInstance().getChildCount()
-				: indexIn;
-		if (!getInstance().hasChildren())
-			getInstance().setFirstChildIndex(getInstance().getTotalSize());
-		child.setChildCount(0); // if child has children, it's size needs to be reset to 0, so adding back
-								// children shows proper size
-		child.setFirstChildIndex(-1); // if child has children, first child needs to be reset to -1 for future add ops
-										// to work properly
-		child.setIndex(getInstance().getFirstChildIndex() + curIndexInParent);
-		child.setParentIndex(getInstance().getIndex());
-		child.setDepth(getInstance().getDepth() + 1);
-		shiftNodesRight(child.getIndex(), curIndexInParent);
-		getInstance().getCore().nodeList.add(child.getIndex(), child); // add to index after loc, and after any pre
-																		// existing children
-		child.setCore(getInstance().getCore());
-
-		getInstance().setChildCount(getInstance().getChildCount() + 1);
-		getInstance().addedChildMod(); // comes from subclass
-		if (foundChildren != null)
-			for (N node : foundChildren)
-				child.addChildForce(node);
-		getInstance().markLeafCacheDirty();
+	
+	default void addChildCore(N child, int indexIn, boolean... forceAdd) {
+	    
+	    // STEP 1 — guard and setup
+	    checkAllowChildren(forceAdd);
+	    ensureCoreInitialized();
+	    
+	    // STEP 2 — if child already has children, detach them for reconnection
+	    List<N> foundChildren = child.hasChildren() ? child.getChildren() : null;
+	    resetChildFields(child);
+	    
+	    // STEP 3 — calculate insertion position and set child fields
+	    int insertPos = resolveInsertPosition(indexIn);
+	    setChildFields(child, insertPos);
+	    
+	    // STEP 4 — insert into nodeList and shift indexes
+	    shiftNodesRight(child.getIndex(), insertPos);
+	    getInstance().getCore().nodeList.add(child.getIndex(), child);
+	    child.setCore(getInstance().getCore());
+	    
+	    // STEP 5 — update parent state and reconnect detached children
+	    getInstance().setChildCount(getInstance().getChildCount() + 1);
+	    getInstance().addedChildMod();
+	    if (foundChildren != null)
+	        for (N node : foundChildren)
+	            child.addChildForce(node);
+	    getInstance().markLeafCacheDirty();
 	}
+	
+	
+	
+	
+	default void checkAllowChildren(boolean... forceAdd) {
+	    if (!getInstance().allowChildren() && (forceAdd.length == 0 || !forceAdd[0]))
+	        throw new UnsupportedOperationException("this class does not allow child nodes to be added");
+	}
+
+	default void ensureCoreInitialized() {
+	    if (getInstance().getCore() == null) getInstance().initCore();
+	}
+
+	
+	/*
+	 * Resets structural fields on a child being added.
+	 * Required when adding a node that was previously a root of its own tree —
+	 * its childCount and firstChild need to be cleared so addChildForce
+	 * can correctly reconnect its children at the new depth.
+	 */
+	
+	default void resetChildFields(N child) {
+	    child.setChildCount(0);
+	    child.setFirstChildIndex(-1);
+	}
+
+	default int resolveInsertPosition(int indexIn) {
+	    if (indexIn < 0 || !getInstance().hasChildren() || indexIn > getInstance().getChildCount())
+	        return getInstance().getChildCount();
+	    return indexIn;
+	}
+
+	default void setChildFields(N child, int insertPos) {
+	    if (!getInstance().hasChildren())
+	        getInstance().setFirstChildIndex(getInstance().getTotalSize());
+	    child.setIndex(getInstance().getFirstChildIndex() + insertPos);
+	    child.setParentIndex(getInstance().getIndex());
+	    child.setDepth(getInstance().getDepth() + 1);
+	}
+	
+	
+	
+	
 
 	default void shiftNodesRight(int chIndex, int iip) { // addition
 		if (chIndex == getInstance().getTotalSize())
@@ -298,42 +307,6 @@ public interface TreeNodeMutations<N extends TreeNodeObject<N> & Iterable<N>> {
 	
 	
 	
-
-//	public default <E> void sortChildren(Function<N, E> sortParam) {
-//		if (!getInstance().hasChildren())
-//			return;
-//		Comparator<N> cFn = (e1, e2) -> 0;
-//		E type = sortParam.apply(getInstance());
-//		if (type instanceof Float)
-//			cFn = (e1, e2) -> Float.compare((Float) sortParam.apply(e1), (Float) sortParam.apply(e2));
-//		else if (type instanceof Integer)
-//			cFn = (e1, e2) -> Integer.compare((Integer) sortParam.apply(e1), (Integer) sortParam.apply(e2));
-//		else if (type instanceof String)
-//			cFn = (e1, e2) -> ((String) sortParam.apply(e1)).compareTo((String) sortParam.apply(e2));
-//		Collections.sort(getInstance().getCore().nodeList.subList(getInstance().getFirstChildIndex(),
-//				getInstance().getFirstChildIndex() + getInstance().getChildCount()), cFn);
-//		for (int i = 0; i < getInstance().getChildCount(); i++) {
-//			getInstance().get(i).setIndex(getInstance().getFirstChildIndex() + i);
-//			for (N nChild : getInstance().get(i).getChildren())
-//				nChild.setParentIndex(getInstance().get(i).getIndex());
-//		}
-//		getInstance().markLeafCacheDirty();
-//	}
-	
-//	default void sortChildrenWithComparator(Comparator<N> cFn) {
-//	    Collections.sort(
-//	        getInstance().getCore().nodeList.subList(
-//	            getInstance().getFirstChildIndex(),
-//	            getInstance().getFirstChildIndex() + getInstance().getChildCount()
-//	        ), cFn);
-//	    for (int i = 0; i < getInstance().getChildCount(); i++) {
-//	        getInstance().get(i).setIndex(getInstance().getFirstChildIndex() + i);
-//	        for (N child : getInstance().get(i).getChildren())
-//	            child.setParentIndex(getInstance().get(i).getIndex());
-//	    }
-//	    getInstance().markLeafCacheDirty();
-//	}
-	
 	// comparator builder — handles Float, Integer, String; returns no-op for unknown types
 	default <E> Comparator<N> buildComparator(Function<N, E> sortParam) {
 	    E type = sortParam.apply(getInstance());
@@ -399,65 +372,7 @@ public interface TreeNodeMutations<N extends TreeNodeObject<N> & Iterable<N>> {
 	    reindexChildren();
 	}
 
-//	public default <E> void shuffleChildren() {
-//		if (!getInstance().hasChildren())
-//			return;
-//		Collections.shuffle(getInstance().getCore().nodeList.subList(getInstance().getFirstChildIndex(),
-//				getInstance().getFirstChildIndex() + getInstance().getChildCount()));
-//		for (int i = 0; i < getInstance().getChildCount(); i++) {
-//			getInstance().get(i).setIndex(getInstance().getFirstChildIndex() + i);
-//			for (N nChild : getInstance().get(i).getChildren())
-//				nChild.setParentIndex(getInstance().get(i).getInstance().getIndex());
-//		}
-//		getInstance().markLeafCacheDirty();
-//	}
-//
-//	public default <E> void sortChildrenReverse(Function<N, E> sortParam) {
-//		if (!getInstance().hasChildren())
-//			return;
-//		Comparator<N> cFn = (e1, e2) -> 0;
-//		E type = sortParam.apply(getInstance());
-//		if (type instanceof Float)
-//			cFn = (e1, e2) -> Float.compare((Float) sortParam.apply(e1), (Float) sortParam.apply(e2));
-//		else if (type instanceof Integer)
-//			cFn = (e1, e2) -> Integer.compare((Integer) sortParam.apply(e1), (Integer) sortParam.apply(e2));
-//		else if (type instanceof String)
-//			cFn = (e1, e2) -> ((String) sortParam.apply(e1)).compareTo((String) sortParam.apply(e2));
-//		Collections.sort(getInstance().getCore().nodeList.subList(getInstance().getFirstChildIndex(),
-//				getInstance().getFirstChildIndex() + getInstance().getChildCount()), cFn);
-//		Collections.reverse(getInstance().getCore().nodeList.subList(getInstance().getFirstChildIndex(),
-//				getInstance().getFirstChildIndex() + getInstance().getChildCount()));
-//		for (int i = 0; i < getInstance().getChildCount(); i++) {
-//			getInstance().get(i).setIndex(getInstance().getFirstChildIndex() + i);
-//			for (N nChild : getInstance().get(i).getChildren())
-//				nChild.setParentIndex(getInstance().get(i).getIndex());
-//		}
-//		getInstance().markLeafCacheDirty();
-//	}
-//
-////		public default <E> void sortAll(Function<N, E> sortParam) {
-////			traverseOperation(sortParam, (f, n) -> {
-////				if (n.hasChildren())
-////					n.sortChildren(f);
-////			});
-////			getInstance().markLeafCacheDirty();
-////		}
-//
-//	public default <E> void sortAllReverse(Function<N, E> sortParam) {
-//		traverseOperation(sortParam, (f, n) -> {
-//			if (n.hasChildren())
-//				n.sortChildrenReverse(f);
-//		});
-//		getInstance().markLeafCacheDirty();
-//	}
 
-//		public default <E> void shuffleAll() {
-//			traverseOperation(null, (f, n) -> {
-//				if (n.hasChildren())
-//					n.shuffleChildren();
-//			});
-//			getInstance().markLeafCacheDirty();
-//		}
 
 	public default <E> void sortAll(Function<N, E> sortParam) {
 		getInstance().forEachNode(n -> {
@@ -474,30 +389,128 @@ public interface TreeNodeMutations<N extends TreeNodeObject<N> & Iterable<N>> {
 		});
 		getInstance().markLeafCacheDirty();
 	}
+	
+	/*
+	 * Removes this node from its parent tree and returns it as a
+	 * new standalone root with its own SingularTreeData.
+	 * Unlike remove(), the node and its subtree are preserved.
+	 */
+	public default N detach() {
+	    if (getInstance().isRoot())
+	        throw new UnsupportedOperationException("Cannot detach root node");
+	    N detached = getInstance().copyNodeSubtree();
+	    remove();
+	    return detached;
+	}
 
-//	// UNTESTED
-//	public default void reverseChildren() {
-//		if (!getInstance().hasChildren())
-//			return;
-//
-//		// Reverse the contiguous slice containing this node's direct children
-//		List<N> kids = getInstance().getCore().nodeList.subList(getInstance().getFirstChildIndex(),
-//				getInstance().getFirstChildIndex() + getInstance().getChildCount());
-//		Collections.reverse(kids);
-//
-//		// Re-index children to match their new positions
-//		for (int i = 0; i < getInstance().getChildCount(); i++) {
-//			N child = getInstance().get(i); // now reflects reversed order
-//			child.setIndex(getInstance().getFirstChildIndex() + i);
-//
-//			// Ensure grandchildren still point at the child's (possibly changed) index
-//			// (Usually already correct if everything is consistent, but this mirrors your
-//			// other methods.)
-//			for (N gc : child.getChildren()) {
-//				gc.setParentIndex(child.getIndex());
-//			}
-//		}
-//		getInstance().markLeafCacheDirty();
-//	}
+	/*
+	 * Removes this node from its current position and attaches it
+	 * as a child of the given target node. Equivalent to detach + addChild.
+	 */
+	public default void moveTo(N newParent) {
+	    N subtree = detach();
+	    newParent.addChild(subtree);
+	}
+
+	/*
+	 * Swaps the subclass data (type, fill, shape data, etc.) of two nodes
+	 * without affecting either node's position or children in the tree.
+	 */
+	public default void swapNodeData(N other) {
+	    N tempA = getInstance().copyNode(false); // save A's data
+	    other.transferSubclassFieldsTo(getInstance()); // A gets B's data
+	    tempA.transferSubclassFieldsTo(other);          // B gets A's data
+	}
+
+	/*
+	 * Swaps two subtrees in the tree, each keeping their own children.
+	 * Both nodes must belong to the same tree.
+	 */
+	public default void swapSubtree(N other) {
+	    if (getInstance() == other) return;
+	    if (!getInstance().getRoot().equals(other.getRoot()))
+	        throw new UnsupportedOperationException("Cannot swap nodes from different trees");
+
+	    int iipA   = getInstance().getIndexInParent();
+	    int iipB   = other.getIndexInParent();
+	    N parentA  = getInstance().getParent();
+	    N parentB  = other.getParent();
+
+	    N copyA = getInstance().copyNodeSubtree();
+	    N copyB = other.copyNodeSubtree();
+
+	    parentA.get(iipA).remove();
+	    parentA.addChildForce(copyB, iipA);
+
+	    parentB.get(iipB).remove();
+	    parentB.addChildForce(copyA, iipB);
+	}
+
+	/*
+	 * Removes this node from the tree and promotes its direct children
+	 * to be children of this node's parent, preserving their subtrees.
+	 * Inverse of insertParent().
+	 */
+	public default void mergeChildren() {
+	    if (getInstance().isRoot())
+	        throw new UnsupportedOperationException("Cannot mergeChildren on root");
+	    if (!getInstance().hasChildren()) {
+	        remove();
+	        return;
+	    }
+	    N parent = getInstance().getParent();
+	    int iip  = getInstance().getIndexInParent();
+
+	    // copy children before removing since remove clears them
+	    List<N> children = new ArrayList<>();
+	    for (int i = 0; i < getInstance().getChildCount(); i++)
+	        children.add(getInstance().get(i).copyNodeSubtree());
+
+	    remove();
+
+	    // insert children at the original position in reverse order
+	    // so they end up in the correct sequence
+	    for (int i = children.size() - 1; i >= 0; i--)
+	        parent.addChildForce(children.get(i), iip);
+	}
+
+	/*
+	 * Collapses the entire subtree so all leaf nodes become
+	 * direct children of this node. All intermediate nodes are removed.
+	 */
+	public default void flatten() {
+	    if (!getInstance().hasChildren()) return;
+	    List<N> leaves = getInstance().getLeafs();
+	    List<N> leafCopies = new ArrayList<>();
+	    for (N leaf : leaves)
+	        leafCopies.add(leaf.copyNode(false));
+	    getInstance().removeChildren();
+	    for (N leaf : leafCopies)
+	        getInstance().addChild(leaf);
+	}
+
+	/*
+	 * Reverses the entire subtree structure at every level —
+	 * each node's children are reversed recursively.
+	 */
+	public default void mirrorSubtree() {
+	    getInstance().forEachNode(n -> {
+	        if (n.hasChildren()) n.reverseChildren();
+	    });
+	}
+
+	/*
+	 * Distributes a list of values to leaf nodes in DFS order.
+	 * List size must match leaf count.
+	 */
+	// e.g. distribute a list of colors to leaf shapes
+	public default <E> void distributeToLeaves(List<E> data, BiConsumer<N, E> setterFn) {
+	    if (data.size() != getInstance().getLeafCount())
+	        throw new UnsupportedOperationException(
+	            "data list size " + data.size() +
+	            " does not match leaf count " + getInstance().getLeafCount());
+	    getInstance().forEachLeafWithIndex((n, i) -> setterFn.accept(n, data.get(i)));
+	}
+
 
 }

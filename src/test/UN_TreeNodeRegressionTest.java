@@ -96,6 +96,34 @@ public class UN_TreeNodeRegressionTest extends PApplet {
 		testReverseChildren();
 		testShuffleChildren();
 		testSortAll();
+		
+		
+		// new method tests
+		testGetSiblings();
+		testGetNthAncestor();
+		testIsAncestorDescendant();
+		testGetPath();
+		testForEachLeafWithIndex();
+		testGetLeafIndex();
+		testGetNodesAtRelativeDepth();
+		testStream();
+		testFindFirstLimited();
+		testForEachNodeAtDepth();
+		testPartition();
+		testMapLeafs();
+		testReduce();
+		testReduceBottomUp();
+		testDetach();
+		testMoveTo();
+		testSwapNodeData();
+		testSwapSubtree();
+		testMergeChildren();
+		testFlatten();
+		testMirrorSubtree();
+		testZip();
+		testInterleaveLeafs();
+		testGetRandomPath();
+		testDistributeToLeaves();
 
 		println("\n==================================================");
 		println("ALL TESTS COMPLETE");
@@ -627,6 +655,487 @@ public class UN_TreeNodeRegressionTest extends PApplet {
 	}
 	
 	
+	// =========================================================
+	// NEW METHOD TESTS — all use fresh trees
+	// =========================================================
+
+	void testGetSiblings() {
+	    println("\n--- testGetSiblings ---");
+
+	    DataNode<String> fresh = buildInitialTree();
+	    DataNode<String> a = fresh.findFirst(n -> "A".equals(extractValue(n)));
+
+	    List<DataNode<String>> siblings = a.getSiblings();
+	    assertEquals(siblings.size(), 2, "A has 2 siblings");
+	    assertTrue(siblings.stream().noneMatch(s -> s == a), "siblings do not include self");
+	    assertTrue(siblings.stream().anyMatch(s -> "B".equals(extractValue(s))), "siblings contain B");
+	    assertTrue(siblings.stream().anyMatch(s -> "C".equals(extractValue(s))), "siblings contain C");
+
+	    // root has no siblings
+	    assertTrue(fresh.getSiblings().isEmpty(), "root has no siblings");
+
+	    // only child has no siblings
+	    DataNode<String> c1 = fresh.findFirst(n -> "C1".equals(extractValue(n)));
+	    assertTrue(c1.getSiblings().isEmpty(), "only child has no siblings");
+	}
+
+	void testGetNthAncestor() {
+	    println("\n--- testGetNthAncestor ---");
+
+	    DataNode<String> fresh = buildInitialTree();
+	    DataNode<String> b1a = fresh.findFirst(n -> "B1a".equals(extractValue(n)));
+
+	    assertEquals(extractValue(b1a.getNthAncestor(1)), "B1",   "1st ancestor of B1a is B1");
+	    assertEquals(extractValue(b1a.getNthAncestor(2)), "B",    "2nd ancestor of B1a is B");
+	    assertEquals(extractValue(b1a.getNthAncestor(3)), "root", "3rd ancestor of B1a is root");
+	    // exceeding depth returns root
+	    assertEquals(extractValue(b1a.getNthAncestor(99)), "root", "exceeding depth returns root");
+	    // 0 returns self
+	    assertEquals(extractValue(b1a.getNthAncestor(0)), "B1a",  "0th ancestor is self");
+	}
+
+	void testIsAncestorDescendant() {
+	    println("\n--- testIsAncestorDescendant ---");
+
+	    DataNode<String> fresh = buildInitialTree();
+	    DataNode<String> b   = fresh.findFirst(n -> "B".equals(extractValue(n)));
+	    DataNode<String> b1  = fresh.findFirst(n -> "B1".equals(extractValue(n)));
+	    DataNode<String> b1a = fresh.findFirst(n -> "B1a".equals(extractValue(n)));
+	    DataNode<String> c   = fresh.findFirst(n -> "C".equals(extractValue(n)));
+
+	    assertTrue(b.isAncestorOf(b1a),    "B is ancestor of B1a");
+	    assertTrue(b1.isAncestorOf(b1a),   "B1 is ancestor of B1a");
+	    assertTrue(fresh.isAncestorOf(b1a),"root is ancestor of B1a");
+	    assertTrue(!c.isAncestorOf(b1a),   "C is not ancestor of B1a");
+	    assertTrue(!b1a.isAncestorOf(b),   "B1a is not ancestor of B");
+
+	    assertTrue(b1a.isDescendantOf(b),    "B1a is descendant of B");
+	    assertTrue(b1a.isDescendantOf(fresh),"B1a is descendant of root");
+	    assertTrue(!b.isDescendantOf(b1a),   "B is not descendant of B1a");
+	    assertTrue(!b1a.isDescendantOf(c),   "B1a is not descendant of C");
+	}
+
+	void testGetPath() {
+	    println("\n--- testGetPath ---");
+
+	    DataNode<String> fresh = buildInitialTree();
+	    DataNode<String> b1a  = fresh.findFirst(n -> "B1a".equals(extractValue(n)));
+
+	    List<DataNode<String>> path = b1a.getPath();
+	    assertEquals(path.size(), 4, "path from root to B1a has 4 nodes");
+	    assertEquals(extractValue(path.get(0)), "root", "path starts at root");
+	    assertEquals(extractValue(path.get(1)), "B",    "path second node is B");
+	    assertEquals(extractValue(path.get(2)), "B1",   "path third node is B1");
+	    assertEquals(extractValue(path.get(3)), "B1a",  "path ends at B1a");
+
+	    // root path is just root
+	    List<DataNode<String>> rootPath = fresh.getPath();
+	    assertEquals(rootPath.size(), 1, "root path has 1 node");
+	    assertEquals(extractValue(rootPath.get(0)), "root", "root path contains root");
+	}
+
+	void testForEachLeafWithIndex() {
+	    println("\n--- testForEachLeafWithIndex ---");
+
+	    DataNode<String> fresh = buildInitialTree();
+	    List<String> indexedLeafs = new ArrayList<>();
+
+	    fresh.forEachLeafWithIndex((n, i) -> indexedLeafs.add(i + ":" + extractValue(n)));
+
+	    assertEquals(indexedLeafs.size(), fresh.getLeafCount(), "forEachLeafWithIndex visits all leaves");
+	    assertEquals(indexedLeafs.get(0), "0:A1",  "first leaf index 0 is A1");
+	    assertEquals(indexedLeafs.get(5), "5:C1",  "last leaf index 5 is C1");
+	    // verify indexes are sequential
+	    for (int i = 0; i < indexedLeafs.size(); i++)
+	        assertTrue(indexedLeafs.get(i).startsWith(i + ":"), "leaf index " + i + " is sequential");
+	}
+
+	void testGetLeafIndex() {
+	    println("\n--- testGetLeafIndex ---");
+
+	    DataNode<String> fresh = buildInitialTree();
+	    DataNode<String> a1  = fresh.findFirst(n -> "A1".equals(extractValue(n)));
+	    DataNode<String> c1  = fresh.findFirst(n -> "C1".equals(extractValue(n)));
+	    DataNode<String> a   = fresh.findFirst(n -> "A".equals(extractValue(n)));
+
+	    assertEquals(a1.getLeafIndex(), 0, "A1 leaf index is 0");
+	    assertEquals(c1.getLeafIndex(), 5, "C1 leaf index is 5");
+	    assertEquals(a.getLeafIndex(), -1, "non-leaf returns -1");
+	}
+
+	void testGetNodesAtRelativeDepth() {
+	    println("\n--- testGetNodesAtRelativeDepth ---");
+
+	    DataNode<String> fresh = buildInitialTree();
+	    DataNode<String> b    = fresh.findFirst(n -> "B".equals(extractValue(n)));
+
+	    List<DataNode<String>> relDepth0 = b.getNodesAtRelativeDepth(0);
+	    assertEquals(relDepth0.size(), 1, "relative depth 0 returns self");
+	    assertEquals(extractValue(relDepth0.get(0)), "B", "relative depth 0 is B");
+
+	    List<DataNode<String>> relDepth1 = b.getNodesAtRelativeDepth(1);
+	    assertEquals(relDepth1.size(), 2, "relative depth 1 from B has 2 nodes");
+
+	    List<DataNode<String>> relDepth2 = b.getNodesAtRelativeDepth(2);
+	    assertEquals(relDepth2.size(), 3, "relative depth 2 from B has 3 nodes");
+	}
+
+	void testStream() {
+	    println("\n--- testStream ---");
+
+	    DataNode<String> fresh = buildInitialTree();
+
+	    // count via stream
+	    long count = fresh.stream().count();
+	    assertEquals((int)count, fresh.getTotalSize(), "stream visits all nodes");
+
+	    // filter leaves via stream
+	    long leafCount = fresh.stream().filter(n -> n.isLeaf()).count();
+	    assertEquals((int)leafCount, fresh.getLeafCount(), "stream filter leaves matches getLeafCount");
+
+	    // collect names via stream
+	    List<String> names = fresh.stream()
+	        .map(n -> extractValue(n))
+	        .collect(java.util.stream.Collectors.toList());
+	    assertEquals(names.get(0), "root", "stream first element is root");
+	    assertEquals(names.size(), fresh.getTotalSize(), "stream collect size matches tree size");
+	}
+
+	void testFindFirstLimited() {
+	    println("\n--- testFindFirstLimited ---");
+
+	    DataNode<String> fresh = buildInitialTree();
+
+	    List<DataNode<String>> results = fresh.findFirst(n -> extractValue(n).startsWith("B"), 3);
+	    assertEquals(results.size(), 3, "findFirst with maxResults=3 returns 3 results");
+
+	    // requesting more than exist returns all matches
+	    List<DataNode<String>> all = fresh.findFirst(n -> extractValue(n).startsWith("B"), 99);
+	    assertEquals(all.size(), fresh.findAll(n -> extractValue(n).startsWith("B")).size(),
+	        "findFirst with large maxResults matches findAll");
+	}
+
+	void testForEachNodeAtDepth() {
+	    println("\n--- testForEachNodeAtDepth ---");
+
+	    DataNode<String> fresh = buildInitialTree();
+	    List<String> depth1Nodes = new ArrayList<>();
+	    List<String> depth2Nodes = new ArrayList<>();
+
+	    fresh.forEachNodeAtDepth(1, n -> depth1Nodes.add(extractValue(n)));
+	    fresh.forEachNodeAtDepth(2, n -> depth2Nodes.add(extractValue(n)));
+
+	    assertEquals(depth1Nodes.size(), 3, "forEachNodeAtDepth(1) visits 3 nodes");
+	    assertEquals(depth2Nodes.size(), 5, "forEachNodeAtDepth(2) visits 5 nodes");
+	    assertTrue(depth1Nodes.contains("A"), "depth 1 contains A");
+	    assertTrue(depth1Nodes.contains("B"), "depth 1 contains B");
+	    assertTrue(depth1Nodes.contains("C"), "depth 1 contains C");
+	}
+
+	void testPartition() {
+	    println("\n--- testPartition ---");
+
+	    DataNode<String> fresh = buildInitialTree();
+	    List<List<DataNode<String>>> parts = fresh.partition(
+	        n -> extractValue(n).startsWith("B"));
+
+	    assertEquals(parts.get(0).size(), 3, "3 leaves start with B: B1a, B1b, B2a");
+	    assertEquals(parts.get(1).size(), 3, "3 leaves do not start with B: A1, A2, C1");
+	    assertTrue(parts.get(0).stream().allMatch(n -> extractValue(n).startsWith("B")),
+	        "matched partition all start with B");
+	    assertTrue(parts.get(1).stream().noneMatch(n -> extractValue(n).startsWith("B")),
+	        "unmatched partition none start with B");
+	    assertEquals(parts.get(0).size() + parts.get(1).size(),
+	        fresh.getLeafCount(), "partition covers all leaves");
+	}
+
+	void testMapLeafs() {
+	    println("\n--- testMapLeafs ---");
+
+	    DataNode<String> fresh = buildInitialTree();
+	    List<Integer> lengths = fresh.mapLeafs(n -> extractValue(n).length());
+
+	    assertEquals(lengths.size(), fresh.getLeafCount(), "mapLeafs returns one value per leaf");
+	    assertEquals((int)lengths.get(0), 2, "A1 length is 2");
+	    assertEquals((int)lengths.get(lengths.size()-1), 2, "C1 length is 2");
+	}
+
+	void testReduce() {
+	    println("\n--- testReduce ---");
+
+	    DataNode<String> fresh = buildInitialTree();
+
+	    // count all nodes via reduce
+	    int count = fresh.reduce(0, (acc, n) -> acc + 1);
+	    assertEquals(count, fresh.getTotalSize(), "reduce count matches getTotalSize");
+
+	    // sum all string lengths
+	    int totalLength = fresh.reduce(0, (acc, n) -> acc + extractValue(n).length());
+	    assertTrue(totalLength > 0, "reduce sum of lengths is positive");
+	}
+
+	void testReduceBottomUp() {
+	    println("\n--- testReduceBottomUp ---");
+
+	    DataNode<String> fresh = buildInitialTree();
+
+	    // count leaves in each subtree bottom-up
+	    int leafCount = fresh.reduceBottomUp(
+	        n -> 1,
+	        (n, childResults) -> childResults.stream().mapToInt(Integer::intValue).sum()
+	    );
+	    assertEquals(leafCount, fresh.getLeafCount(), "reduceBottomUp leaf count matches getLeafCount");
+
+	    // max string length in subtree
+	    int maxLength = fresh.reduceBottomUp(
+	        n -> extractValue(n).length(),
+	        (n, childResults) -> Math.max(
+	            extractValue(n).length(),
+	            childResults.stream().mapToInt(Integer::intValue).max().orElse(0))
+	    );
+	    assertTrue(maxLength > 0, "reduceBottomUp max length is positive");
+	}
+
+	void testDetach() {
+	    println("\n--- testDetach ---");
+
+	    DataNode<String> fresh = buildInitialTree();
+	    int beforeTotal = countNodesRecursive(fresh);
+
+	    DataNode<String> b1 = fresh.findFirst(n -> "B1".equals(extractValue(n)));
+	    int subtreeSize = countNodesRecursive(b1);
+
+	    DataNode<String> detached = b1.detach();
+
+	    assertEquals(countNodesRecursive(fresh), beforeTotal - subtreeSize,
+	        "tree shrinks by detached subtree size");
+	    assertTrue(fresh.findFirst(n -> "B1".equals(extractValue(n))) == null,
+	        "B1 no longer in original tree");
+	    assertTrue(detached.isRoot(), "detached node is new root");
+	    assertEquals(countNodesRecursive(detached), subtreeSize,
+	        "detached subtree has correct size");
+	    assertEquals(fresh.getLeafCount(), countLeafsRecursive(fresh),
+	        "leaf count consistent after detach");
+	}
+
+	void testMoveTo() {
+	    println("\n--- testMoveTo ---");
+
+	    DataNode<String> fresh = buildInitialTree();
+	    DataNode<String> a1 = fresh.findFirst(n -> "A1".equals(extractValue(n)));
+	    DataNode<String> c  = fresh.findFirst(n -> "C".equals(extractValue(n)));
+	    int beforeTotal = countNodesRecursive(fresh);
+	    int beforeCChildren = c.getChildCount();
+
+	    a1.moveTo(c);
+
+	    assertEquals(countNodesRecursive(fresh), beforeTotal,
+	        "total count unchanged after moveTo");
+	    assertTrue(fresh.findFirst(n -> "A1".equals(extractValue(n))) != null,
+	        "A1 still exists after moveTo");
+	    assertEquals(c.getChildCount(), beforeCChildren + 1,
+	        "C has one more child after moveTo");
+	    assertEquals(fresh.getLeafCount(), countLeafsRecursive(fresh),
+	        "leaf count consistent after moveTo");
+	}
+
+	void testSwapNodeData() {
+	    println("\n--- testSwapNodeData ---");
+
+	    DataNode<String> fresh = buildInitialTree();
+	    DataNode<String> a1 = fresh.findFirst(n -> "A1".equals(extractValue(n)));
+	    DataNode<String> c1 = fresh.findFirst(n -> "C1".equals(extractValue(n)));
+	    int a1Index = a1.getIndex();
+	    int c1Index = c1.getIndex();
+
+	    a1.swapNodeData(c1);
+
+	    // data swapped
+	    assertEquals(extractValue(fresh.getCore().nodeList.get(a1Index)), "C1",
+	        "A1 position now has C1 data");
+	    assertEquals(extractValue(fresh.getCore().nodeList.get(c1Index)), "A1",
+	        "C1 position now has A1 data");
+	    // structure unchanged
+	    assertEquals(fresh.getLeafCount(), countLeafsRecursive(fresh),
+	        "leaf count consistent after swapNodeData");
+	}
+
+	void testSwapSubtree() {
+	    println("\n--- testSwapSubtree ---");
+
+	    DataNode<String> fresh = buildInitialTree();
+	    DataNode<String> a = fresh.findFirst(n -> "A".equals(extractValue(n)));
+	    DataNode<String> c = fresh.findFirst(n -> "C".equals(extractValue(n)));
+	    int aChildren = a.getChildCount();
+	    int cChildren = c.getChildCount();
+	    int totalBefore = countNodesRecursive(fresh);
+
+	    a.swapSubtree(c);
+
+	    assertEquals(countNodesRecursive(fresh), totalBefore,
+	        "total count unchanged after swapSubtree");
+	    // A and C swapped positions
+	    DataNode<String> aAfter = fresh.findFirst(n -> "A".equals(extractValue(n)));
+	    DataNode<String> cAfter = fresh.findFirst(n -> "C".equals(extractValue(n)));
+	    assertEquals(aAfter.getChildCount(), aChildren,
+	        "A subtree intact after swap");
+	    assertEquals(cAfter.getChildCount(), cChildren,
+	        "C subtree intact after swap");
+	    assertEquals(fresh.getLeafCount(), countLeafsRecursive(fresh),
+	        "leaf count consistent after swapSubtree");
+	}
+
+	void testMergeChildren() {
+	    println("\n--- testMergeChildren ---");
+
+	    DataNode<String> fresh = buildInitialTree();
+	    DataNode<String> b  = fresh.findFirst(n -> "B".equals(extractValue(n)));
+	    int bChildCount     = b.getChildCount();
+	    DataNode<String> bParent = b.getParent();
+	    int parentChildCountBefore = bParent.getChildCount();
+	    int totalBefore = countNodesRecursive(fresh);
+
+	    b.mergeChildren();
+
+	    // B is gone, its children now belong to root
+	    assertTrue(fresh.findFirst(n -> "B".equals(extractValue(n))) == null,
+	        "B removed after mergeChildren");
+	    assertEquals(bParent.getChildCount(), parentChildCountBefore - 1 + bChildCount,
+	        "parent gains B's children minus B itself");
+	    assertEquals(countNodesRecursive(fresh), totalBefore - 1,
+	        "total count decreases by 1 (only B removed)");
+	    assertTrue(fresh.findFirst(n -> "B1".equals(extractValue(n))) != null,
+	        "B1 still exists after mergeChildren");
+	    assertTrue(fresh.findFirst(n -> "B2".equals(extractValue(n))) != null,
+	        "B2 still exists after mergeChildren");
+	    assertEquals(fresh.getLeafCount(), countLeafsRecursive(fresh),
+	        "leaf count consistent after mergeChildren");
+	}
+
+	void testFlatten() {
+	    println("\n--- testFlatten ---");
+
+	    DataNode<String> fresh = buildInitialTree();
+	    int leafCount = fresh.getLeafCount();
+
+	    fresh.flatten();
+
+	    assertEquals(fresh.getChildCount(), leafCount,
+	        "after flatten root has same number of children as original leaf count");
+	    assertTrue(fresh.containsOnlyLeafs(),
+	        "after flatten all children are leaves");
+	    assertEquals(fresh.getLeafCount(), leafCount,
+	        "leaf count unchanged after flatten");
+	    assertEquals(countNodesRecursive(fresh), leafCount + 1,
+	        "total nodes = leaves + root after flatten");
+	}
+
+	void testMirrorSubtree() {
+	    println("\n--- testMirrorSubtree ---");
+
+	    DataNode<String> fresh = buildInitialTree();
+	    int totalBefore = countNodesRecursive(fresh);
+
+	    fresh.mirrorSubtree();
+
+	    // structure size unchanged
+	    assertEquals(countNodesRecursive(fresh), totalBefore,
+	        "total count unchanged after mirrorSubtree");
+	    // root children reversed: was A,B,C now C,B,A
+	    assertEquals(extractValue(fresh.get(0)), "C", "after mirror first child is C");
+	    assertEquals(extractValue(fresh.get(1)), "B", "after mirror second child is B");
+	    assertEquals(extractValue(fresh.get(2)), "A", "after mirror third child is A");
+	    assertEquals(fresh.getLeafCount(), countLeafsRecursive(fresh),
+	        "leaf count consistent after mirrorSubtree");
+	    // double mirror returns to original
+	    fresh.mirrorSubtree();
+	    assertEquals(extractValue(fresh.get(0)), "A", "double mirror restores A first");
+	    assertEquals(extractValue(fresh.get(2)), "C", "double mirror restores C last");
+	}
+
+	void testZip() {
+	    println("\n--- testZip ---");
+
+	    DataNode<String> treeA = buildInitialTree();
+	    DataNode<String> treeB = buildInitialTree();
+
+	    List<String> pairs = new ArrayList<>();
+	    treeA.zip(treeB, (a, b) -> pairs.add(extractValue(a) + "+" + extractValue(b)));
+
+	    assertEquals(pairs.size(), treeA.getTotalSize(),
+	        "zip visits all node pairs");
+	    assertEquals(pairs.get(0), "root+root",
+	        "first pair is root+root");
+	    // all pairs should match since trees are identical
+	    assertTrue(pairs.stream().allMatch(p -> {
+	        String[] parts = p.split("\\+");
+	        return parts[0].equals(parts[1]);
+	    }), "all paired nodes have matching data in identical trees");
+	}
+
+	void testInterleaveLeafs() {
+	    println("\n--- testInterleaveLeafs ---");
+
+	    DataNode<String> treeA = buildInitialTree();
+	    DataNode<String> treeB = buildInitialTree();
+
+	    List<Object> interleaved = treeA.interleaveLeafs(treeB);
+
+	    assertEquals(interleaved.size(), treeA.getLeafCount() + treeB.getLeafCount(),
+	        "interleaved list contains all leaves from both trees");
+	    // verify alternating pattern — cast and check
+	    for (int i = 0; i < interleaved.size() - 1; i += 2) {
+	        DataNode<String> a = (DataNode<String>) interleaved.get(i);
+	        DataNode<String> b = (DataNode<String>) interleaved.get(i + 1);
+	        assertEquals(extractValue(a), extractValue(b),
+	            "interleaved leaves at positions " + i + " and " + (i+1) + " match");
+	    }
+	}
+
+	void testGetRandomPath() {
+	    println("\n--- testGetRandomPath ---");
+
+	    DataNode<String> fresh = buildInitialTree();
+
+	    // run several times to account for randomness
+	    for (int i = 0; i < 10; i++) {
+	        List<DataNode<String>> path = fresh.getRandomPath();
+	        assertTrue(path.size() > 0,          "random path is non-empty");
+	        assertTrue(path.get(0) == fresh,      "random path starts at root");
+	        assertTrue(path.get(path.size()-1).isLeaf(), "random path ends at leaf");
+	        // verify path is connected
+	        for (int j = 1; j < path.size(); j++)
+	            assertTrue(path.get(j).getParent() == path.get(j-1),
+	                "random path nodes are connected");
+	    }
+	}
+
+	void testDistributeToLeaves() {
+	    println("\n--- testDistributeToLeaves ---");
+
+	    DataNode<String> fresh = buildInitialTree();
+	    List<String> values = Arrays.asList("v0","v1","v2","v3","v4","v5");
+
+	    // store distributed values in a separate list to verify
+	    List<String> received = new ArrayList<>();
+	    fresh.distributeToLeaves(values, (n, v) -> received.add(extractValue(n) + "=" + v));
+
+	    assertEquals(received.size(), fresh.getLeafCount(),
+	        "distributeToLeaves called once per leaf");
+	    assertEquals(received.get(0), "A1=v0", "first leaf A1 gets v0");
+	    assertEquals(received.get(5), "C1=v5", "last leaf C1 gets v5");
+
+	    // wrong size throws
+	    boolean threw = false;
+	    try {
+	        fresh.distributeToLeaves(Arrays.asList("a","b"), (n, v) -> {});
+	    } catch (UnsupportedOperationException e) {
+	        threw = true;
+	    }
+	    assertTrue(threw, "distributeToLeaves throws on size mismatch");
+	}
+	
+	
 	
 	
 	
@@ -695,6 +1204,11 @@ public class UN_TreeNodeRegressionTest extends PApplet {
 	void assertEquals(String a, String b, String label) {
 		if (a != null && a.equals(b)) println("[PASS] " + label + " -> " + a);
 		else                          println("[FAIL] " + label + " -> got " + a + ", expected " + b);
+	}
+	
+	void assertEquals(long a, int b, String label) {
+	    if (a == b) println("[PASS] " + label + " -> " + a);
+	    else        println("[FAIL] " + label + " -> got " + a + ", expected " + b);
 	}
 
 	void assertListEquals(List<String> a, List<String> b, String label) {

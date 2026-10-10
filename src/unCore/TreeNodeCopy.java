@@ -1,5 +1,6 @@
 package unCore;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -8,22 +9,14 @@ import java.util.function.Supplier;
 public interface TreeNodeCopy<N extends TreeNodeObject<N> & Iterable<N>>  {
 	N getInstance();
 	N get(int childIndex);
-//	int getChildCount();
-//	N defaultConstructor();
 	boolean hasChildren();
 	List<N> getChildren();
 	N getLastChild();
-//	int getDepth();
-//	int getIndex();
 	int getIndexInParent();
-//	int getParentIndex();
-//	int getFirstChildIndex();
 	N getParent();
 	boolean hasParent();
 	SingularTreeData<N> getCore();
 	void transferSubclassFieldsTo(N node);
-//	void addChildForce();
-//	<T> void traverseOperation(T data, BiConsumer<T, N> nodeFn);
 	
 	
 	
@@ -106,6 +99,54 @@ public interface TreeNodeCopy<N extends TreeNodeObject<N> & Iterable<N>>  {
 		input.setFirstChildIndex(getInstance().getFirstChildIndex());
 		input.setChildCount(getInstance().getChildCount());
 		input.setDepth(getInstance().getDepth());
+	}
+	
+	/*
+	 * Walks two trees of identical structure simultaneously,
+	 * calling fn with the paired nodes at each position.
+	 * Stops silently at first structural mismatch rather than throwing.
+	 */
+	public default <E extends TreeNodeObject<E> & Iterable<E>>
+	void zip(E other, BiConsumer<N, E> fn) {
+	    fn.accept(getInstance(), other);
+	    int minChildren = Math.min(getInstance().getChildCount(), other.getChildCount());
+	    for (int i = 0; i < minChildren; i++)
+	        get(i).zip(other.get(i), fn);
+	}
+
+	/*
+	 * Merges the leaves of two trees into a single list by alternating —
+	 * leaf 0 from this, leaf 0 from other, leaf 1 from this, leaf 1 from other.
+	 * If trees have different leaf counts, remaining leaves from the
+	 * longer tree are appended at the end.
+	 */
+	public default <E extends TreeNodeObject<E> & Iterable<E>>
+	List<Object> interleaveLeafs(E other) {
+	    List<N> aLeafs = getInstance().getLeafs();
+	    List<E> bLeafs = other.getLeafs();
+	    List<Object> out = new ArrayList<>();
+	    int max = Math.max(aLeafs.size(), bLeafs.size());
+	    for (int i = 0; i < max; i++) {
+	        if (i < aLeafs.size()) out.add(aLeafs.get(i));
+	        if (i < bLeafs.size()) out.add(bLeafs.get(i));
+	    }
+	    return out;
+	}
+
+	/*
+	 * Returns a random path from root to a random leaf as an ordered list.
+	 * At each level, a random child is chosen. Useful for generative work
+	 * and random walks through a tree structure.
+	 */
+	public default List<N> getRandomPath() {
+	    List<N> path = new ArrayList<>();
+	    N cur = getInstance().getRoot();
+	    path.add(cur);
+	    while (cur.hasChildren()) {
+	        cur = cur.get((int)(Math.random() * cur.getChildCount()));
+	        path.add(cur);
+	    }
+	    return path;
 	}
 
 	
