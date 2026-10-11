@@ -34,6 +34,7 @@ public class UN_BASIC extends PApplet{
 	@Override
 	public void setup() {
 		noLoop();
+		println("Java: " + System.getProperty("java.version"));
 		root = new DataNode<>("root");
 			root.addChildWithData( "c0");
 				root.get(0).addChildWithData("c00");
